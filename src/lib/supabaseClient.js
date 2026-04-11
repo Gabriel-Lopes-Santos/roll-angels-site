@@ -2,7 +2,21 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://zpcpcydqutomotjybuge.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwY3BjeWRxdXRvbW90anlidWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MjkwNDgsImV4cCI6MjA4MzQwNTA0OH0.yXAdoOu53FjReFna8aLsx79HQtBZ1-tTnL1YxXPG5yQ';
-export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Usa sessionStorage (some ao fechar o browser) ou localStorage (persiste),
+// dependendo da preferência "Lembre-me" salva pelo usuário no último login.
+const getAuthStorage = () => {
+  const rememberMe = localStorage.getItem('ra_remember_me');
+  return rememberMe === 'false' ? window.sessionStorage : window.localStorage;
+};
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    storage: getAuthStorage(),
+    autoRefreshToken: true,
+    persistSession: true,
+  },
+});
 
 export async function getCharacterProfile(charSheetId) {
   try {
@@ -198,6 +212,23 @@ export async function signOut() {
   return await supabase.auth.signOut();
 }
 
+/**
+ * Envia e-mail de recuperação de senha para o usuário.
+ * O link no e-mail redireciona para /reset-password no site.
+ */
+export async function resetPassword(email) {
+  return await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://roll-angels.vercel.app/reset-password',
+  });
+}
+
+/**
+ * Atualiza a senha do usuário autenticado (usado na página de reset).
+ */
+export async function updatePassword(newPassword) {
+  return await supabase.auth.updateUser({ password: newPassword });
+}
+
 export async function getSession() {
   return await supabase.auth.getSession();
 }
@@ -240,5 +271,172 @@ export async function getUserCharacters(userId) {
     return { data: formattedData, error: null };
   } catch (error) {
     return { data: null, error: error.message };
+  }
+}
+
+// --- Character Creation Requests Functions ---
+
+export async function getClassesList() {
+  try {
+    const { data, error } = await supabase.from('classes').select('id, name, name_pt, subclass_level, skill_choices_count').order('name', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getSubclassesList(classId) {
+  try {
+    if (!classId) return { data: [] };
+    const { data, error } = await supabase.from('subclasses').select('*').eq('class_id', classId).order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getRacesList() {
+  try {
+    const { data, error } = await supabase.from('race').select('*').order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getBackgroundsList() {
+  try {
+    const { data, error } = await supabase.from('background').select('*').order('name', { ascending: true });
+    return { data: data || [], error }; 
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getSubRacesList(raceId) {
+  try {
+    if (!raceId) return { data: [] };
+    const { data, error } = await supabase.from('sub_race').select('*').eq('race_id', raceId).order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getSkillsList() {
+  try {
+    const { data, error } = await supabase.from('savings_skills')
+      .select('*')
+      .eq('type', 'skill')
+      .order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getRaceProficiencies(raceId, subRaceId) {
+  try {
+    if (!raceId && !subRaceId) return { data: [] };
+    
+    let query = supabase.from('race_proficiencies').select('*');
+    if (raceId && subRaceId) {
+      query = query.or(`race_id.eq.${raceId},sub_race_id.eq.${subRaceId}`);
+    } else if (raceId) {
+      query = query.eq('race_id', raceId);
+    } else {
+      query = query.eq('sub_race_id', subRaceId);
+    }
+    
+    const { data, error } = await query;
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getClassProficiencies(classId) {
+  try {
+    if (!classId) return { data: [] };
+    const { data, error } = await supabase.from('class_proficiencies')
+      .select('skill_id')
+      .eq('class_id', classId);
+    return { data: data ? data.map(d => d.skill_id) : [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getBackgroundProficiencies(bgId) {
+  try {
+    if (!bgId) return { data: [] };
+    const { data, error } = await supabase.from('background_proficiencies')
+      .select('skill_id')
+      .eq('background_id', bgId);
+    return { data: data ? data.map(d => d.skill_id) : [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createCharacterRequest(userId, characterData) {
+  try {
+    const { data, error } = await supabase.from('char_creation_requests').insert([
+      { user_id: userId, character_data: characterData, status: 'pending' }
+    ]).select();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getUserPendingRequest(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('char_creation_requests')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getAllPendingRequests() {
+  try {
+    const { data, error } = await supabase
+      .from('char_creation_requests')
+      .select(`
+        *,
+        auth_users:user_id (email, raw_user_meta_data)
+      `)
+      .eq('status', 'pending');
+    // Obs: O join com auth.users pode precisar de view ou raw_user_meta_data se as policies permitirem,
+    // mas o Supabase não deixa dar join direto em auth.users por segurança.
+    // Pra simplificar e contornar, se der erro no join, pegamos sem ele.
+    if (error) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('char_creation_requests')
+        .select('*')
+        .eq('status', 'pending');
+      return { data: fallbackData || [], error: fallbackError };
+    }
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function updateRequestStatus(requestId, newStatus) {
+  try {
+    const { data, error } = await supabase
+      .from('char_creation_requests')
+      .update({ status: newStatus })
+      .eq('id', requestId);
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
   }
 }

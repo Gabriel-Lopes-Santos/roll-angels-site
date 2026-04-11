@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getUserCharacters, signOut } from '../lib/supabaseClient';
-import { LogOut, User, Shield, Loader2 } from 'lucide-react';
+import { supabase, getUserCharacters, signOut, getUserPendingRequest } from '../lib/supabaseClient';
+import { LogOut, User, Shield, Loader2, PlusCircle, Clock } from 'lucide-react';
 
 export default function CharacterSelection() {
   const navigate = useNavigate();
   const [characters, setCharacters] = useState([]);
+  const [pendingRequest, setPendingRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -33,6 +34,11 @@ export default function CharacterSelection() {
       if (chars) {
         setCharacters(chars);
       }
+
+      // Check for pending request if user has no characters (or always good to know anyway)
+      const { data: request } = await getUserPendingRequest(session.user.id);
+      setPendingRequest(request);
+      
       setLoading(false);
     };
 
@@ -43,6 +49,8 @@ export default function CharacterSelection() {
     await signOut();
     navigate('/login');
   };
+
+  const isDM = user?.email === 'gabrielsantos-2003@hotmail.com';
 
   if (loading) {
     return (
@@ -68,21 +76,57 @@ export default function CharacterSelection() {
               Conectado como <span className="text-purple-400 font-medium">{user?.user_metadata?.display_name || user?.email}</span>
             </p>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white transition-colors text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair da Taverna
-          </button>
+          <div className="flex gap-3">
+            {isDM && (
+              <button 
+                onClick={() => navigate('/mestre')}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-800 rounded-lg text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
+              >
+                <Shield className="w-4 h-4" />
+                Painel do Mestre
+              </button>
+            )}
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white transition-colors text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair da Taverna
+            </button>
+          </div>
         </header>
 
         {/* Character Grid */}
         {characters.length === 0 ? (
-          <div className="text-center py-20 bg-neutral-900/30 border border-neutral-800/50 rounded-2xl border-dashed">
-            <User className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-white mb-2">Nenhum aventureiro encontrado</h3>
-            <p className="text-neutral-500">O Mestre da mesa ainda não vinculou nenhuma ficha a essa conta.</p>
+          <div className="flex flex-col items-center justify-center py-20 bg-neutral-900/30 border border-neutral-800/50 rounded-2xl border-dashed">
+            {pendingRequest ? (
+              <div className="text-center max-w-md">
+                <Clock className="w-16 h-16 text-yellow-500/80 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-3">Solicitação em Análise</h3>
+                <p className="text-neutral-400 mb-6 leading-relaxed">
+                  Os deuses (O Mestre) estão analisando sua ficha lvl 1 de <span className="text-purple-400 font-medium">{pendingRequest.character_data.name || 'Aventureiro'}</span>. 
+                  Aguarde a aprovação celestial para adentrar na guilda.
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm font-medium">
+                  Status: Pendente
+                </div>
+              </div>
+            ) : (
+              <div className="text-center max-w-md">
+                <User className="w-16 h-16 text-neutral-600 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-3">Sua jornada começa aqui</h3>
+                <p className="text-neutral-400 mb-8 leading-relaxed">
+                  Você ainda não possui nenhum personagem. Inicie sua lenda enviando uma solicitação de criação de personagem de nível 1.
+                </p>
+                <button
+                  onClick={() => navigate('/criacao')}
+                  className="inline-flex items-center gap-3 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-900/30"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  Criar Personagem (Nível 1)
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
