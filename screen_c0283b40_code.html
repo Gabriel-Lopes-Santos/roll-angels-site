@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Obsidian Archive - Kaelen, o Sábio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#5b403e",
+                      "surface-container-low": "#1c1b1d",
+                      "tertiary": "#ffb95f",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-highest": "#353437",
+                      "on-secondary-container": "#e6ecff",
+                      "surface-variant": "#353437",
+                      "on-tertiary-container": "#3e2400",
+                      "surface": "#131315",
+                      "background": "#131315",
+                      "primary-fixed-dim": "#ffb3ad",
+                      "secondary-fixed-dim": "#adc6ff",
+                      "on-tertiary": "#472a00",
+                      "on-secondary-fixed": "#001a42",
+                      "on-surface": "#e5e1e4",
+                      "inverse-on-surface": "#313032",
+                      "primary-fixed": "#ffdad7",
+                      "on-secondary-fixed-variant": "#004395",
+                      "on-background": "#e5e1e4",
+                      "on-error": "#690005",
+                      "primary": "#ffb3ad",
+                      "secondary-container": "#0566d9",
+                      "tertiary-container": "#ca8100",
+                      "secondary-fixed": "#d8e2ff",
+                      "primary-container": "#ff5451",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "on-primary-fixed": "#410004",
+                      "outline": "#ab8986",
+                      "error": "#ffb4ab",
+                      "on-primary-fixed-variant": "#930013",
+                      "surface-container-high": "#2a2a2c",
+                      "tertiary-fixed": "#ffddb8",
+                      "surface-tint": "#ffb3ad",
+                      "on-tertiary-fixed": "#2a1700",
+                      "surface-dim": "#131315",
+                      "surface-container": "#201f22",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "on-primary-container": "#5c0008",
+                      "surface-container-lowest": "#0e0e10",
+                      "on-primary": "#68000a",
+                      "on-secondary": "#002e6a",
+                      "secondary": "#adc6ff",
+                      "on-surface-variant": "#e4beba",
+                      "inverse-primary": "#b91a24",
+                      "surface-bright": "#39393b",
+                      "inverse-surface": "#e5e1e4",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Space Grotesk"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          }
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #131315;
+            color: #e5e1e4;
+            font-family: 'Inter', sans-serif;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="pb-20 md:pb-0 md:pl-64">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#201f22] flex justify-between items-center px-6 h-16 shadow-none border-b border-[#5b403e]/15">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-primary">
+<img alt="Kaelen Portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJhwASmiIo5-Ou7BPrcdMt61KS1cb2wfb7m5qtHHlYuMy3Qf2Ra2KjnnM578NY3JIxbcEx-nAs1xjaUobaxJfxyF5zJLalR2hnWk6xeVchZ6Tb4k_jDawL5v0iSMApIIZthF49bcK-lCN1LBu1acfdXlGaqAEREe5PfUX-h0oHKFDIBZitbYXsPQGnzAUoUXEVIQ76Zx2cXMm1mBFDhxx6TtVHqmlL_6gVi0--p7LE7hs9ruhGkJicgmJ82E3sKtvQuGa0VYMcOzs"/>
+</div>
+<div>
+<h1 class="font-['Space_Grotesk'] text-lg font-black tracking-tighter text-[#ffb3ad] leading-none uppercase">Kaelen, o Sábio</h1>
+<div class="flex gap-2 text-[10px] font-bold tracking-widest uppercase opacity-60">
+<span>Mago</span>
+<span class="text-primary">•</span>
+<span>Elfo</span>
+<span class="text-primary">•</span>
+<span>Lvl 5</span>
+</div>
+</div>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="font-['Space_Grotesk'] tracking-wider uppercase font-bold text-sm text-[#ffb3ad] border-b-2 border-[#ffb3ad] pb-1" href="#">DASHBOARD</a>
+<a class="font-['Space_Grotesk'] tracking-wider uppercase font-bold text-sm text-[#e4beba]/60 hover:text-[#ffb3ad] transition-colors duration-200" href="#">HISTORY</a>
+<a class="font-['Space_Grotesk'] tracking-wider uppercase font-bold text-sm text-[#e4beba]/60 hover:text-[#ffb3ad] transition-colors duration-200" href="#">MESSAGES</a>
+</div>
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined text-[#e4beba]/60 hover:text-[#ffb3ad] transition-all">notifications</button>
+<button class="material-symbols-outlined text-[#e4beba]/60 hover:text-[#ffb3ad] transition-all">settings</button>
+</div>
+</header>
+<!-- SideNavBar (Desktop Only) -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 border-r border-[#5b403e]/15 bg-[#131315] hidden md:flex flex-col py-4">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-surface-container-high rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-2xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+</div>
+<div>
+<p class="font-['Space_Grotesk'] text-[10px] font-bold tracking-widest uppercase text-primary">ARCHMAGE</p>
+<p class="font-['Space_Grotesk'] text-xs font-bold text-on-surface opacity-40">LEVEL 42</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 bg-[#2a2a2c] text-[#ffb3ad] border-l-4 border-[#ffb3ad] px-6 py-3 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                STATS
+            </a>
+<a class="flex items-center gap-4 text-[#e4beba]/60 px-6 py-3 hover:bg-[#201f22] font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300 hover:text-[#ffb3ad]" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                INVENTORY
+            </a>
+<a class="flex items-center gap-4 text-[#e4beba]/60 px-6 py-3 hover:bg-[#201f22] font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300 hover:text-[#ffb3ad]" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+                SPELLBOOK
+            </a>
+<a class="flex items-center gap-4 text-[#e4beba]/60 px-6 py-3 hover:bg-[#201f22] font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300 hover:text-[#ffb3ad]" href="#">
+<span class="material-symbols-outlined">map</span>
+                QUESTS
+            </a>
+<a class="flex items-center gap-4 text-[#e4beba]/60 px-6 py-3 hover:bg-[#201f22] font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300 hover:text-[#ffb3ad]" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+                LOGS
+            </a>
+</nav>
+<div class="px-6 py-4 mt-auto">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 rounded-sm font-['Space_Grotesk'] text-xs font-black tracking-[0.2em] uppercase active:scale-95 transition-transform">
+                LEVEL UP
+            </button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="mt-16 p-4 md:p-8 max-w-7xl mx-auto">
+<!-- Tabs Navigation -->
+<div class="flex gap-4 mb-8 overflow-x-auto no-scrollbar border-b border-white/5 pb-px">
+<button class="font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase pb-4 border-b-2 border-transparent text-on-surface-variant/60 hover:text-on-surface transition-all whitespace-nowrap">Overview</button>
+<button class="font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase pb-4 border-b-2 border-primary text-primary whitespace-nowrap">Stats</button>
+<button class="font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase pb-4 border-b-2 border-transparent text-on-surface-variant/60 hover:text-on-surface transition-all whitespace-nowrap">Inventory</button>
+<button class="font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase pb-4 border-b-2 border-transparent text-on-surface-variant/60 hover:text-on-surface transition-all whitespace-nowrap">Spells</button>
+</div>
+<!-- Tab Content -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Left Column -->
+<div class="md:col-span-8 space-y-6">
+<!-- Health Card -->
+<div class="bg-surface-container p-6 rounded relative overflow-hidden group">
+<div class="flex justify-between items-end mb-4">
+<div>
+<p class="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-primary-container uppercase">Health Status</p>
+<h3 class="font-['Space_Grotesk'] text-3xl font-black">35 <span class="text-on-surface-variant/20">/ 42</span></h3>
+</div>
+<span class="material-symbols-outlined text-primary-container text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-none overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-primary transition-all duration-500" style="width: 83%"></div>
+</div>
+<div class="absolute top-0 right-0 p-1 opacity-5">
+<span class="material-symbols-outlined text-9xl">favorite</span>
+</div>
+</div>
+<!-- Combat Quick View -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<!-- AC Card -->
+<div class="bg-surface-container-high p-6 flex items-center gap-6 group hover:bg-surface-bright transition-all">
+<div class="w-16 h-16 bg-surface-container-lowest flex items-center justify-center border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<p class="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">Armor Class</p>
+<p class="font-['Space_Grotesk'] text-4xl font-black">15</p>
+</div>
+</div>
+<!-- Initiative -->
+<div class="bg-surface-container-high p-6 flex items-center gap-6 group hover:bg-surface-bright transition-all">
+<div class="w-16 h-16 bg-surface-container-lowest flex items-center justify-center border border-outline-variant/15">
+<span class="material-symbols-outlined text-secondary text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<p class="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">Initiative</p>
+<p class="font-['Space_Grotesk'] text-4xl font-black">+4</p>
+</div>
+</div>
+</div>
+<!-- Attributes Grid (with Saving Throws) -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+<!-- STR -->
+<div class="bg-surface-container p-4 border-l-2 border-primary-container/20">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">Strength</p>
+<div class="flex items-center gap-1">
+<span class="text-[7px] font-bold text-on-surface-variant/40">RESISTÊNCIA</span>
+<div class="w-1.5 h-1.5 rounded-full border border-primary-container/40"></div>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-['Space_Grotesk'] text-xl font-bold">14</span>
+<span class="text-xs font-bold text-primary">+2</span>
+</div>
+</div>
+<!-- DEX -->
+<div class="bg-surface-container p-4 border-l-2 border-primary-container/20">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">Dexterity</p>
+<div class="flex items-center gap-1">
+<span class="text-[7px] font-bold text-on-surface-variant/40">RESISTÊNCIA</span>
+<div class="w-1.5 h-1.5 rounded-full border border-primary-container/40"></div>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-['Space_Grotesk'] text-xl font-bold">18</span>
+<span class="text-xs font-bold text-primary">+4</span>
+</div>
+</div>
+<!-- CON -->
+<div class="bg-surface-container p-4 border-l-2 border-primary-container/20">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">Constitution</p>
+<div class="flex items-center gap-1">
+<span class="text-[7px] font-bold text-on-surface-variant/40">RESISTÊNCIA</span>
+<div class="w-1.5 h-1.5 rounded-full border border-primary-container/40"></div>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-['Space_Grotesk'] text-xl font-bold">12</span>
+<span class="text-xs font-bold text-primary">+1</span>
+</div>
+</div>
+<!-- INT -->
+<div class="bg-surface-container p-4 border-l-2 border-secondary/20">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">Intelligence</p>
+<div class="flex items-center gap-1">
+<span class="text-[7px] font-bold text-secondary">RESISTÊNCIA</span>
+<div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-['Space_Grotesk'] text-xl font-bold">20</span>
+<span class="text-xs font-bold text-secondary">+5</span>
+</div>
+</div>
+<!-- WIS -->
+<div class="bg-surface-container p-4 border-l-2 border-secondary/20">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">Wisdom</p>
+<div class="flex items-center gap-1">
+<span class="text-[7px] font-bold text-secondary">RESISTÊNCIA</span>
+<div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-['Space_Grotesk'] text-xl font-bold">16</span>
+<span class="text-xs font-bold text-secondary">+3</span>
+</div>
+</div>
+<!-- CHA -->
+<div class="bg-surface-container p-4 border-l-2 border-secondary/20">
+<div class="flex justify-between items-start mb-1">
+<p class="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">Charisma</p>
+<div class="flex items-center gap-1">
+<span class="text-[7px] font-bold text-on-surface-variant/40">RESISTÊNCIA</span>
+<div class="w-1.5 h-1.5 rounded-full border border-secondary/40"></div>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-['Space_Grotesk'] text-xl font-bold">10</span>
+<span class="text-xs font-bold text-on-surface-variant/40">+0</span>
+</div>
+</div>
+</div>
+<!-- Skills Section -->
+<div class="bg-surface-container p-6 rounded">
+<div class="flex justify-between items-center mb-6">
+<h4 class="font-['Space_Grotesk'] text-xs font-black tracking-[0.2em] uppercase text-primary">PERÍCIAS</h4>
+<span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-widest text-secondary">BÔNUS DE PROFICIÊNCIA: +3</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-8">
+<!-- Skill Item (Template) -->
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-primary/40 rounded-[2px] flex items-center justify-center">
+<div class="w-1.5 h-1.5 bg-primary rounded-[1px]"></div>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase">ACROBACIA <span class="text-on-surface-variant/40 font-bold ml-1">(DES)</span></span>
+</div>
+<span class="text-xs font-bold text-primary">+7</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+<span class="text-[10px] font-black tracking-widest uppercase">ADESTRAR ANIMAIS <span class="text-on-surface-variant/40 font-bold ml-1">(SAB)</span></span>
+</div>
+<span class="text-xs font-bold opacity-40">+3</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-primary/40 rounded-[2px] flex items-center justify-center">
+<div class="w-1.5 h-1.5 bg-primary rounded-[1px]"></div>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase">ARCANISMO <span class="text-on-surface-variant/40 font-bold ml-1">(INT)</span></span>
+</div>
+<span class="text-xs font-bold text-primary">+8</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+<span class="text-[10px] font-black tracking-widest uppercase">ATLETISMO <span class="text-on-surface-variant/40 font-bold ml-1">(FOR)</span></span>
+</div>
+<span class="text-xs font-bold opacity-40">+2</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+<span class="text-[10px] font-black tracking-widest uppercase">ENGANAÇÃO <span class="text-on-surface-variant/40 font-bold ml-1">(CAR)</span></span>
+</div>
+<span class="text-xs font-bold opacity-40">+0</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-primary/40 rounded-[2px] flex items-center justify-center">
+<div class="w-1.5 h-1.5 bg-primary rounded-[1px]"></div>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase">FURTIVIDADE <span class="text-on-surface-variant/40 font-bold ml-1">(DES)</span></span>
+</div>
+<span class="text-xs font-bold text-primary">+7</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-primary/40 rounded-[2px] flex items-center justify-center">
+<div class="w-1.5 h-1.5 bg-primary rounded-[1px]"></div>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase">HISTÓRIA <span class="text-on-surface-variant/40 font-bold ml-1">(INT)</span></span>
+</div>
+<span class="text-xs font-bold text-primary">+8</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+<span class="text-[10px] font-black tracking-widest uppercase">INTIMIDAÇÃO <span class="text-on-surface-variant/40 font-bold ml-1">(CAR)</span></span>
+</div>
+<span class="text-xs font-bold opacity-40">+0</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-primary/40 rounded-[2px] flex items-center justify-center">
+<div class="w-1.5 h-1.5 bg-primary rounded-[1px]"></div>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase">INVESTIGAÇÃO <span class="text-on-surface-variant/40 font-bold ml-1">(INT)</span></span>
+</div>
+<span class="text-xs font-bold text-primary">+8</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+<span class="text-[10px] font-black tracking-widest uppercase">MEDICINA <span class="text-on-surface-variant/40 font-bold ml-1">(SAB)</span></span>
+</div>
+<span class="text-xs font-bold opacity-40">+3</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+<span class="text-[10px] font-black tracking-widest uppercase">NATUREZA <span class="text-on-surface-variant/40 font-bold ml-1">(INT)</span></span>
+</div>
+<span class="text-xs font-bold opacity-40">+5</span>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 border border-primary/40 rounded-[2px] flex items-center justify-center">
+<div class="w-1.5 h-1.5 bg-primary rounded-[1px]"></div>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase">PERCEPÇÃO <span class="text-on-surface-variant/40 font-bold ml-1">(SAB)</span></span>
+</div>
+<span class="text-xs font-bold text-primary">+6</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Content -->
+<div class="md:col-span-4 space-y-6">
+<!-- Spells Quick List -->
+<section class="bg-surface-container p-6">
+<div class="flex justify-between items-center mb-6">
+<h4 class="font-['Space_Grotesk'] text-xs font-black tracking-widest uppercase text-secondary">Active Spells</h4>
+<span class="text-[10px] font-bold text-on-surface-variant/40">LVL 1-2 Slots: 4/4</span>
+</div>
+<div class="space-y-3">
+<div class="group flex items-center justify-between p-3 bg-surface-container-high rounded-sm hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">auto_fix_high</span>
+<span class="text-xs font-bold uppercase tracking-tight">Mage Armor</span>
+</div>
+<span class="text-[9px] text-on-surface-variant/60 font-black">LVL 1</span>
+</div>
+<div class="group flex items-center justify-between p-3 bg-surface-container-high rounded-sm hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">cyclone</span>
+<span class="text-xs font-bold uppercase tracking-tight">Magic Missile</span>
+</div>
+<span class="text-[9px] text-on-surface-variant/60 font-black">LVL 1</span>
+</div>
+<div class="group flex items-center justify-between p-3 bg-surface-container-high rounded-sm hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">visibility</span>
+<span class="text-xs font-bold uppercase tracking-tight">Invisibility</span>
+</div>
+<span class="text-[9px] text-on-surface-variant/60 font-black">LVL 2</span>
+</div>
+</div>
+</section>
+<!-- Inventory Quick List -->
+<section class="bg-surface-container-lowest p-6 border border-outline-variant/10">
+<h4 class="font-['Space_Grotesk'] text-xs font-black tracking-widest uppercase text-tertiary mb-6">Valuable Assets</h4>
+<div class="space-y-1">
+<div class="flex justify-between py-2 border-b border-white/5 last:border-0">
+<span class="text-xs font-medium opacity-80">Poção de Cura</span>
+<span class="text-xs font-bold text-primary">x3</span>
+</div>
+<div class="flex justify-between py-2 border-b border-white/5 last:border-0">
+<span class="text-xs font-medium opacity-80">Cajado de Ébano</span>
+<span class="text-xs font-bold opacity-40">1</span>
+</div>
+<div class="flex justify-between py-2 border-b border-white/5 last:border-0">
+<span class="text-xs font-medium opacity-80">Pergaminho de Voo</span>
+<span class="text-xs font-bold text-primary">x1</span>
+</div>
+</div>
+<div class="mt-8 flex items-center justify-between bg-surface-container-high p-4 rounded-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary" data-weight="fill" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+<span class="font-['Space_Grotesk'] text-xl font-black">150</span>
+</div>
+<span class="text-[10px] font-black tracking-widest uppercase opacity-40">PO</span>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full z-50 bg-[#131315]/70 backdrop-blur-xl border-t border-[#5b403e]/15 flex justify-around items-center h-16 px-4 md:hidden">
+<button class="flex flex-col items-center justify-center text-[#ffb3ad] scale-110 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">swords</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">COMBAT</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#e4beba]/40 hover:text-[#ffb3ad] active:scale-90 transition-transform">
+<span class="material-symbols-outlined">bedtime</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">REST</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#e4beba]/40 hover:text-[#ffb3ad] active:scale-90 transition-transform">
+<span class="material-symbols-outlined">key</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">LOOT</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#e4beba]/40 hover:text-[#ffb3ad] active:scale-90 transition-transform">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">PARTY</span>
+</button>
+</nav>
+<!-- Floating Action Button -->
+<div class="fixed bottom-20 right-6 md:bottom-8 md:right-8 group">
+<button class="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary-container shadow-2xl flex items-center justify-center text-on-primary-container active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<span class="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-surface-container-high px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Novo Ataque</span>
+</div>
+</body></html>
