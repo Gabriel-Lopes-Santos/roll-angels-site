@@ -1,44 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getUserCharacters, signOut, getUserPendingRequest } from '../lib/supabaseClient';
-import { LogOut, User, Shield, Loader2, PlusCircle, Clock } from 'lucide-react';
+import { supabase, getUserCharacters, signOut, getUserPendingRequest, getUserAwaitingFullRequests } from '../lib/supabaseClient';
+import { LogOut, User, Shield, Loader2, PlusCircle, Clock, ScrollText } from 'lucide-react';
 
 export default function CharacterSelection() {
   const navigate = useNavigate();
   const [characters, setCharacters] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(null);
+  const [fullCreationRequests, setFullCreationRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkAuthAndLoad = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate('/login');
         return;
       }
-      
+
       const rememberMe = localStorage.getItem('remember_me');
       const tempSession = sessionStorage.getItem('temp_session');
-      
+
       if (rememberMe === 'false' && !tempSession) {
         await signOut();
         navigate('/login');
         return;
       }
-      
+
       setUser(session.user);
-      const { data: chars, error } = await getUserCharacters(session.user.id);
-      
+      const { data: chars } = await getUserCharacters(session.user.id);
+
       if (chars) {
         setCharacters(chars);
       }
 
-      // Check for pending request if user has no characters (or always good to know anyway)
+      // Check for pending level 1 request
       const { data: request } = await getUserPendingRequest(session.user.id);
       setPendingRequest(request);
-      
+
+      // Check for DM-initiated full creation requests
+      const { data: fullReqs } = await getUserAwaitingFullRequests(session.user.id);
+      setFullCreationRequests(fullReqs || []);
+
       setLoading(false);
     };
 
@@ -62,14 +67,14 @@ export default function CharacterSelection() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-200 font-sans p-4 sm:p-8 relative overflow-hidden">
-      
+
       {/* Background Decorativo */}
       <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-purple-900/10 to-transparent pointer-events-none"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        
+
         {/* Header */}
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-12">
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold font-serif text-white tracking-tight">Seus Personagens</h1>
             <p className="text-neutral-400 text-sm mt-1">
@@ -78,7 +83,7 @@ export default function CharacterSelection() {
           </div>
           <div className="flex gap-3">
             {isDM && (
-              <button 
+              <button
                 onClick={() => navigate('/mestre')}
                 className="flex items-center gap-2 px-4 py-2 bg-emerald-900/40 hover:bg-emerald-900/60 border border-emerald-800 rounded-lg text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
               >
@@ -86,7 +91,7 @@ export default function CharacterSelection() {
                 Painel do Mestre
               </button>
             )}
-            <button 
+            <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white transition-colors text-sm"
             >
@@ -96,6 +101,36 @@ export default function CharacterSelection() {
           </div>
         </header>
 
+        {/* DM Full Creation Request Banners */}
+        {fullCreationRequests.length > 0 && (
+          <div className="space-y-3 mb-8">
+            {fullCreationRequests.map(req => (
+              <div key={req.id}
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-purple-900/20 to-neutral-900/60 border border-purple-500/30 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <ScrollText className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">O Mestre convoca você!</h3>
+                    <p className="text-neutral-400 text-sm mt-0.5">
+                      Registre seu personagem completo preenchendo a ficha solicitada pelo Mestre.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate(`/criacao-completa/${req.id}`)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-900/30 text-sm whitespace-nowrap"
+                >
+                  <ScrollText className="w-4 h-4" />
+                  Preencher Ficha
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Character Grid */}
         {characters.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-neutral-900/30 border border-neutral-800/50 rounded-2xl border-dashed">
@@ -104,7 +139,7 @@ export default function CharacterSelection() {
                 <Clock className="w-16 h-16 text-yellow-500/80 mx-auto mb-6" />
                 <h3 className="text-2xl font-bold text-white mb-3">Solicitação em Análise</h3>
                 <p className="text-neutral-400 mb-6 leading-relaxed">
-                  Os deuses (O Mestre) estão analisando sua ficha lvl 1 de <span className="text-purple-400 font-medium">{pendingRequest.character_data.name || 'Aventureiro'}</span>. 
+                  Os deuses (O Mestre) estão analisando sua ficha lvl 1 de <span className="text-purple-400 font-medium">{pendingRequest.character_data.name || 'Aventureiro'}</span>.
                   Aguarde a aprovação celestial para adentrar na guilda.
                 </p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm font-medium">
@@ -131,19 +166,18 @@ export default function CharacterSelection() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {characters.map(char => (
-              <div 
+              <div
                 key={char.id}
                 onClick={() => navigate(`/ficha/${char.id}`)}
                 className="group relative bg-neutral-900/60 border border-neutral-800 hover:border-purple-500/50 rounded-2xl p-5 cursor-pointer transition-all hover:shadow-2xl hover:shadow-purple-900/10 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-neutral-950/80 pointer-events-none"></div>
-                
+
                 <div className="relative z-10 flex items-start gap-4">
                   <div className="w-16 h-16 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0 border border-neutral-700 overflow-hidden">
-                    {/* Placeholder Avatar - Idealmente viria do banco de dados futuramente */}
                     <User className="w-8 h-8 text-neutral-500" />
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-white truncate group-hover:text-purple-400 transition-colors">
                       {char.name || 'Sem Nome'}

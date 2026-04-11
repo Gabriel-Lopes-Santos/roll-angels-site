@@ -3,6 +3,7 @@ import CharacterSheet from './components/CharacterSheet'
 import Login from './pages/Login'
 import CharacterSelection from './pages/CharacterSelection'
 import CharacterCreationRequest from './pages/CharacterCreationRequest'
+import CharacterFullCreation from './pages/CharacterFullCreation'
 import DMDashboard from './pages/DMDashboard'
 import ResetPassword from './pages/ResetPassword'
 
@@ -14,6 +15,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/selecao" element={<CharacterSelection />} />
         <Route path="/criacao" element={<CharacterCreationRequest />} />
+        <Route path="/criacao-completa/:requestId" element={<CharacterFullCreation />} />
         <Route path="/mestre" element={<DMDashboard />} />
         <Route path="/ficha/:id" element={<CharacterSheet />} />
         <Route path="/reset-password" element={<ResetPassword />} />

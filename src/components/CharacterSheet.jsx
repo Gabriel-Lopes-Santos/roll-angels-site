@@ -5,6 +5,7 @@ import { Loader2, ArrowLeft, Image as ImageIcon, Trash2, Check, X, User } from '
 import StatsTab from './tabs/StatsTab';
 import InventarioTab from './tabs/InventarioTab';
 import MagiasTab from './tabs/MagiasTab';
+import PersonaTab from './tabs/PersonaTab';
 
 export default function CharacterSheet() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ export default function CharacterSheet() {
   const [activeTab, setActiveTab] = useState('status');
 
   const [errorMsg, setErrorMsg] = useState('');
-  
+
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -39,7 +40,7 @@ export default function CharacterSheet() {
 
   const handleUpdateAvatar = async (remove = false) => {
     setIsSavingAvatar(true);
-    
+
     if (remove) {
       const res = await updateAvatar(character.id, null);
       if (res.success) {
@@ -57,7 +58,7 @@ export default function CharacterSheet() {
         setIsAvatarModalOpen(false);
       } else alert("Erro ao enviar a imagem.");
     }
-    
+
     setIsSavingAvatar(false);
   };
 
@@ -71,6 +72,7 @@ export default function CharacterSheet() {
 
   const tabs = [
     { id: 'status', label: 'STATUS', icon: 'analytics' },
+    { id: 'persona', label: 'PERSONA', icon: 'person' },
     { id: 'inventario', label: 'INVENTÁRIO', icon: 'inventory_2' },
     { id: 'magias', label: 'GRIMÓRIO', icon: 'auto_stories' },
     { id: 'missoes', label: 'MISSÕES', icon: 'explore' },
@@ -91,7 +93,7 @@ export default function CharacterSheet() {
   // Lógica de Formatação da Raça/Sub-raça
   const isHumanoid = character.race?.toLowerCase() === 'humanoid' || character.race?.toLowerCase() === 'humanoide';
   let displayRace = character.race || 'SEM RAÇA';
-  
+
   if (isHumanoid) {
     displayRace = character.sub_race ? character.sub_race : character.race;
   } else if (character.sub_race) {
@@ -100,23 +102,23 @@ export default function CharacterSheet() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
-      
+
       {/* TopAppBar */}
       <header className="fixed top-0 w-full z-50 bg-surface-container flex justify-between items-center px-4 md:px-6 h-16 shadow-none border-b border-white/5">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => navigate('/selecao')}
             className="flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors mr-2"
           >
             <ArrowLeft className="w-6 h-6 text-purple-400" />
           </button>
-          <div 
+          <div
             onClick={() => { setIsAvatarModalOpen(true); setPreviewUrl(character.avatar); }}
             className="h-10 w-10 rounded-full overflow-hidden border-2 border-purple-400 cursor-pointer hover:border-purple-400/80 transition-all hover:scale-105 flex items-center justify-center bg-surface-container-highest"
             title="Alterar Foto de Perfil"
           >
             {character.avatar ? (
-              <img alt={`${character.name} Portrait`} className="w-full h-full object-cover" src={character.avatar}/>
+              <img alt={`${character.name} Portrait`} className="w-full h-full object-cover" src={character.avatar} />
             ) : (
               <User className="w-6 h-6 text-on-surface-variant/40" />
             )}
@@ -138,7 +140,7 @@ export default function CharacterSheet() {
             <button className="hover:text-purple-400 transition-colors">Histórico</button>
             <button className="hover:text-purple-400 transition-colors">Mensagens</button>
           </div>
-          
+
           <div className="flex items-center gap-3 text-neutral-400">
             <button className="hover:text-purple-400 transition-colors flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">notifications</span>
@@ -160,8 +162,8 @@ export default function CharacterSheet() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-4 px-6 py-3 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300
-                  ${isActive 
-                    ? 'bg-surface-container-high text-purple-400 border-l-4 border-purple-400' 
+                  ${isActive
+                    ? 'bg-surface-container-high text-purple-400 border-l-4 border-purple-400'
                     : 'text-neutral-400 hover:bg-surface-container hover:text-purple-400 border-l-4 border-transparent'
                   }`}
               >
@@ -176,15 +178,16 @@ export default function CharacterSheet() {
       {/* Main Content */}
       <main className="mt-16 pb-20 md:pb-8 md:pl-64 p-4 md:p-8 max-w-7xl mx-auto w-full">
         {activeTab === 'status' && <StatsTab character={character} />}
+        {activeTab === 'persona' && <PersonaTab character={character} />}
         {activeTab === 'inventario' && <InventarioTab character={character} />}
         {activeTab === 'magias' && <MagiasTab character={character} />}
-        
+
         {activeTab === 'missoes' && (
           <div className="p-8 text-center text-on-surface-variant/40 font-['Space_Grotesk'] tracking-widest uppercase text-sm mt-20">
             Aba de missões em construção
           </div>
         )}
-        
+
         {activeTab === 'log' && (
           <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-4">
@@ -195,7 +198,7 @@ export default function CharacterSheet() {
             </div>
 
             <div className="bg-surface-container p-6 rounded border border-outline-variant/10">
-              <textarea 
+              <textarea
                 className="w-full min-h-[150px] bg-surface-container-lowest text-on-surface p-4 rounded outline-none border border-white/5 focus:border-primary/50 transition-colors resize-y text-sm font-['Inter'] leading-relaxed placeholder:text-on-surface-variant/30"
                 placeholder="Insira notas, acontecimentos ou informações importantes da sessão..."
               ></textarea>
@@ -236,35 +239,35 @@ export default function CharacterSheet() {
                 {tab.icon}
               </span>
               <span className="font-['Inter'] text-[10px] uppercase tracking-widest font-semibold mt-1">
-                {tab.label.substring(0,6)}
+                {tab.label.substring(0, 6)}
               </span>
             </button>
           )
         })}
       </nav>
 
-    {/* Modal de Foto de Perfil */}
+      {/* Modal de Foto de Perfil */}
       {isAvatarModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface-container border border-white/10 rounded-xl p-6 max-w-sm w-full shadow-2xl relative">
-            <button 
+            <button
               onClick={() => setIsAvatarModalOpen(false)}
               className="absolute top-4 right-4 text-on-surface-variant/50 hover:text-white transition-colors"
             >
-              <X className="w-5 h-5"/>
+              <X className="w-5 h-5" />
             </button>
             <h3 className="font-['Space_Grotesk'] text-xl font-black text-primary mb-4 flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
               FOTO DE PERFIL
             </h3>
-            
+
             <div className="flex justify-center mb-6">
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-primary/50 shadow-lg relative group bg-surface-container-highest flex justify-center items-center">
                 {previewUrl ? (
-                  <img 
-                     src={previewUrl} 
-                     alt="Preview" 
-                     className="w-full h-full object-cover group-hover:opacity-75 transition-opacity" 
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
                   />
                 ) : (
                   <User className="w-16 h-16 text-on-surface-variant/40" />
@@ -276,8 +279,8 @@ export default function CharacterSheet() {
               <div>
                 <label className="text-xs font-bold tracking-widest text-on-surface-variant/60 uppercase font-['Space_Grotesk'] mb-2 block">Upload da Imagem</label>
                 <div className="relative">
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept="image/*"
                     onChange={handleFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -285,27 +288,27 @@ export default function CharacterSheet() {
                   <div className="w-full bg-surface-container-lowest border border-white/10 rounded p-3 text-sm flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors">
                     <ImageIcon className="w-5 h-5 text-on-surface-variant/50" />
                     <span className="text-on-surface-variant/70 font-semibold truncate text-xs">
-                       {selectedFile ? selectedFile.name : "Clique aqui para Selecionar"}
+                      {selectedFile ? selectedFile.name : "Clique aqui para Selecionar"}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2 pt-2">
-                <button 
+                <button
                   onClick={() => handleUpdateAvatar(false)}
                   disabled={isSavingAvatar || !selectedFile}
                   className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 py-3 rounded font-bold uppercase tracking-widest text-xs flex justify-center items-center gap-2 transition-colors disabled:opacity-50"
                 >
-                  {isSavingAvatar ? <Loader2 className="w-4 h-4 animate-spin"/> : <Check className="w-4 h-4"/>}
+                  {isSavingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   Salvar Imagem
                 </button>
-                <button 
+                <button
                   onClick={() => handleUpdateAvatar(true)}
                   disabled={isSavingAvatar || (!character.avatar && !previewUrl)}
                   className="w-full hover:bg-error/10 text-error py-2 rounded font-bold uppercase tracking-widest text-xs flex justify-center items-center gap-2 transition-colors disabled:opacity-50 border border-transparent hover:border-error/20"
                 >
-                  <Trash2 className="w-4 h-4"/>
+                  <Trash2 className="w-4 h-4" />
                   Remover Foto
                 </button>
               </div>

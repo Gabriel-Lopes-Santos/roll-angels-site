@@ -190,6 +190,46 @@ export async function uploadAvatarFile(charSheetId, file) {
   }
 }
 
+// --- Character Appearance Functions ---
+
+export async function getCharacterAppearance(sheetId) {
+  try {
+    const { data, error } = await supabase
+      .from('char_appearance')
+      .select('*')
+      .eq('sheet_id', sheetId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao buscar aparência:", error);
+      return { data: null, error: error.message };
+    }
+    return { data: data || {}, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function upsertCharacterAppearance(sheetId, appearanceData) {
+  try {
+    const payload = { ...appearanceData, sheet_id: sheetId };
+
+    const { data, error } = await supabase
+      .from('char_appearance')
+      .upsert(payload, { onConflict: 'sheet_id' })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao salvar aparência:", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 // --- Auth & Selection Functions ---
 
 export async function signUp(email, password, displayName) {
@@ -438,5 +478,261 @@ export async function updateRequestStatus(requestId, newStatus) {
     return { data, error };
   } catch (err) {
     return { data: null, error: err.message };
+  }
+}
+
+// --- Full Character Creation Request Functions ---
+
+export async function getUserProfiles() {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('display_name', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getSensesLanguagesList() {
+  try {
+    const { data, error } = await supabase
+      .from('senses_languages')
+      .select('*')
+      .order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getDamageTypesList() {
+  try {
+    const { data, error } = await supabase
+      .from('damage_types')
+      .select('*')
+      .order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getSavingsSkillsList() {
+  try {
+    const { data, error } = await supabase
+      .from('savings_skills')
+      .select('*')
+      .order('name_pt', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createFullCreationRequest(targetUserId, requestedBy) {
+  try {
+    const { data, error } = await supabase
+      .from('char_full_creation_requests')
+      .insert([{ target_user_id: targetUserId, requested_by: requestedBy, status: 'awaiting_user' }])
+      .select();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getUserAwaitingFullRequests(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('char_full_creation_requests')
+      .select('*')
+      .eq('target_user_id', userId)
+      .eq('status', 'awaiting_user');
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getFullCreationRequest(requestId) {
+  try {
+    const { data, error } = await supabase
+      .from('char_full_creation_requests')
+      .select('*')
+      .eq('id', requestId)
+      .maybeSingle();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function submitFullCreationRequest(requestId, characterData) {
+  try {
+    const { data, error } = await supabase
+      .from('char_full_creation_requests')
+      .update({
+        character_data: characterData,
+        status: 'pending_review',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .select()
+      .maybeSingle();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getAllPendingFullRequests() {
+  try {
+    const { data, error } = await supabase
+      .from('char_full_creation_requests')
+      .select('*')
+      .eq('status', 'pending_review')
+      .order('updated_at', { ascending: false });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function updateFullRequestStatus(requestId, newStatus, dmNotes = null) {
+  try {
+    const update = { status: newStatus, updated_at: new Date().toISOString() };
+    if (dmNotes !== null) update.dm_notes = dmNotes;
+    const { data, error } = await supabase
+      .from('char_full_creation_requests')
+      .update(update)
+      .eq('id', requestId);
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+/**
+ * Aprova uma solicitação completa e insere registros em todas as tabelas char_*.
+ * @param {object} req - O registro completo de char_full_creation_requests
+ * @returns {{ success: boolean, error?: string, charSheetId?: number }}
+ */
+export async function approveFullCreation(req) {
+  try {
+    const d = req.character_data;
+
+    // 1. char_sheet
+    const sheetPayload = {
+      name: d.name,
+      owner_id: req.target_user_id,
+      type: 'character',
+      race_id: d.race_id || null,
+      sub_race_id: d.sub_race_id || null,
+      size: d.size || 'Medium',
+      alignment: d.alignment || 'Neutro',
+      armor_class: d.armor_class || 10,
+      hit_points_max: d.hit_points_max || 10,
+      hit_points: d.hit_points || d.hit_points_max || 10,
+      speed: d.speed || 9,
+      speed_fly: d.speed_fly || null,
+      speed_swim: d.speed_swim || null,
+      str: d.str || 10,
+      dex: d.dex || 10,
+      con: d.con || 10,
+      int: d.int || 10,
+      wis: d.wis || 10,
+      cha: d.cha || 10,
+      exp: d.exp || 0,
+      level: d.level || 1,
+      background_id: d.background_id || null,
+      passive_perception: d.passive_perception || 10,
+      proficiency_bonus: d.proficiency_bonus || 2,
+    };
+
+    const { data: newChar, error: charErr } = await supabase
+      .from('char_sheet')
+      .insert([sheetPayload])
+      .select()
+      .single();
+
+    if (charErr) return { success: false, error: 'char_sheet: ' + charErr.message };
+    const sheetId = newChar.id;
+
+    // 2. char_class
+    if (d.class_id) {
+      const { error: classErr } = await supabase
+        .from('char_class')
+        .insert([{
+          sheet_id: sheetId,
+          class_id: d.class_id,
+          subclass_id: d.subclass_id || null,
+          level: d.level || 1,
+        }]);
+      if (classErr) console.error('char_class insert error:', classErr);
+    }
+
+    // 3. char_proficiencies
+    if (d.proficiencies && d.proficiencies.length > 0) {
+      const profRows = d.proficiencies.map(p => ({
+        sheet_id: sheetId,
+        skill_id: p.skill_id,
+        especialization: p.expertise || false,
+        source: p.source || null,
+      }));
+      const { error: profErr } = await supabase.from('char_proficiencies').insert(profRows);
+      if (profErr) console.error('char_proficiencies insert error:', profErr);
+    }
+
+    // 4. char_senses_languages
+    if (d.senses_languages && d.senses_languages.length > 0) {
+      const slRows = d.senses_languages.map(id => ({
+        sheet_id: sheetId,
+        senses_langugages_id: id,
+      }));
+      const { error: slErr } = await supabase.from('char_senses_languages').insert(slRows);
+      if (slErr) console.error('char_senses_languages insert error:', slErr);
+    }
+
+    // 5. char_resistance
+    if (d.resistances && d.resistances.length > 0) {
+      const rRows = d.resistances.map(id => ({
+        sheet_id: sheetId,
+        damage_id: id,
+        active: true,
+      }));
+      const { error: rErr } = await supabase.from('char_resistance').insert(rRows);
+      if (rErr) console.error('char_resistance insert error:', rErr);
+    }
+
+    // 6. char_immunity
+    if (d.immunities && d.immunities.length > 0) {
+      const iRows = d.immunities.map(id => ({
+        sheet_id: sheetId,
+        damage_id: id,
+        active: true,
+      }));
+      const { error: iErr } = await supabase.from('char_immunity').insert(iRows);
+      if (iErr) console.error('char_immunity insert error:', iErr);
+    }
+
+    // 7. char_vulnerabilities
+    if (d.vulnerabilities && d.vulnerabilities.length > 0) {
+      const vRows = d.vulnerabilities.map(id => ({
+        sheet_id: sheetId,
+        damage_id: id,
+        active: true,
+      }));
+      const { error: vErr } = await supabase.from('char_vulnerabilities').insert(vRows);
+      if (vErr) console.error('char_vulnerabilities insert error:', vErr);
+    }
+
+    // Atualizar status da solicitação
+    await updateFullRequestStatus(req.id, 'approved');
+
+    return { success: true, charSheetId: sheetId };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 }
