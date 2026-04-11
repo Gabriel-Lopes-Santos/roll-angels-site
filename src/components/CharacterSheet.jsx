@@ -108,11 +108,11 @@ export default function CharacterSheet() {
             onClick={() => navigate('/selecao')}
             className="flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors mr-2"
           >
-            <ArrowLeft className="w-6 h-6 text-primary" />
+            <ArrowLeft className="w-6 h-6 text-purple-400" />
           </button>
           <div 
             onClick={() => { setIsAvatarModalOpen(true); setPreviewUrl(character.avatar); }}
-            className="h-10 w-10 rounded-full overflow-hidden border-2 border-primary cursor-pointer hover:border-primary/80 transition-all hover:scale-105 flex items-center justify-center bg-surface-container-highest"
+            className="h-10 w-10 rounded-full overflow-hidden border-2 border-purple-400 cursor-pointer hover:border-purple-400/80 transition-all hover:scale-105 flex items-center justify-center bg-surface-container-highest"
             title="Alterar Foto de Perfil"
           >
             {character.avatar ? (
@@ -122,28 +122,28 @@ export default function CharacterSheet() {
             )}
           </div>
           <div>
-            <h1 className="font-['Space_Grotesk'] text-lg font-black tracking-tighter text-primary leading-none uppercase">{character.name}</h1>
+            <h1 className="font-['Space_Grotesk'] text-lg font-black tracking-tighter text-purple-400 leading-none uppercase">{character.name}</h1>
             <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase opacity-60 whitespace-nowrap">
               <span>{character.class || 'SEM CLASSE'}</span>
-              <span className="text-primary">•</span>
+              <span className="text-purple-400">•</span>
               <span>{displayRace}</span>
-              <span className="text-primary">•</span>
+              <span className="text-purple-400">•</span>
               <span>Lvl {character.level || 1}</span>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
-          <div className="hidden md:flex items-center gap-6 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase text-on-surface-variant/60">
-            <button className="hover:text-primary transition-colors">Histórico</button>
-            <button className="hover:text-primary transition-colors">Mensagens</button>
+          <div className="hidden md:flex items-center gap-6 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase text-neutral-400">
+            <button className="hover:text-purple-400 transition-colors">Histórico</button>
+            <button className="hover:text-purple-400 transition-colors">Mensagens</button>
           </div>
           
-          <div className="flex items-center gap-3 text-on-surface-variant/60">
-            <button className="hover:text-primary transition-colors flex items-center justify-center">
+          <div className="flex items-center gap-3 text-neutral-400">
+            <button className="hover:text-purple-400 transition-colors flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">notifications</span>
             </button>
-            <button className="hover:text-primary transition-colors flex items-center justify-center">
+            <button className="hover:text-purple-400 transition-colors flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">settings</span>
             </button>
           </div>
@@ -161,8 +161,8 @@ export default function CharacterSheet() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-4 px-6 py-3 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300
                   ${isActive 
-                    ? 'bg-surface-container-high text-primary border-l-4 border-primary' 
-                    : 'text-on-surface-variant/60 hover:bg-surface-container hover:text-primary border-l-4 border-transparent'
+                    ? 'bg-surface-container-high text-purple-400 border-l-4 border-purple-400' 
+                    : 'text-neutral-400 hover:bg-surface-container hover:text-purple-400 border-l-4 border-transparent'
                   }`}
               >
                 <span className="material-symbols-outlined">{tab.icon}</span>
@@ -230,7 +230,7 @@ export default function CharacterSheet() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center justify-center scale-100 active:scale-90 transition-transform w-20
-                ${isActive ? 'text-primary' : 'text-on-surface-variant/40 hover:text-primary'}`}
+                ${isActive ? 'text-purple-400' : 'text-neutral-400 hover:text-purple-400'}`}
             >
               <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "" }}>
                 {tab.icon}

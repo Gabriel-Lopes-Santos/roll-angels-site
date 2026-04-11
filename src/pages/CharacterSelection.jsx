@@ -46,7 +46,7 @@ export default function CharacterSelection() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-red-500">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-purple-500">
         <Loader2 className="w-10 h-10 animate-spin" />
       </div>
     );
@@ -56,7 +56,7 @@ export default function CharacterSelection() {
     <div className="min-h-screen bg-neutral-950 text-neutral-200 font-sans p-4 sm:p-8 relative overflow-hidden">
       
       {/* Background Decorativo */}
-      <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-red-900/10 to-transparent pointer-events-none"></div>
+      <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-purple-900/10 to-transparent pointer-events-none"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">
         
@@ -65,7 +65,7 @@ export default function CharacterSelection() {
           <div>
             <h1 className="text-3xl font-bold font-serif text-white tracking-tight">Seus Personagens</h1>
             <p className="text-neutral-400 text-sm mt-1">
-              Conectado como <span className="text-red-400 font-medium">{user?.user_metadata?.display_name || user?.email}</span>
+              Conectado como <span className="text-purple-400 font-medium">{user?.user_metadata?.display_name || user?.email}</span>
             </p>
           </div>
           <button 
@@ -90,7 +90,7 @@ export default function CharacterSelection() {
               <div 
                 key={char.id}
                 onClick={() => navigate(`/ficha/${char.id}`)}
-                className="group relative bg-neutral-900/60 border border-neutral-800 hover:border-red-500/50 rounded-2xl p-5 cursor-pointer transition-all hover:shadow-2xl hover:shadow-red-900/10 overflow-hidden"
+                className="group relative bg-neutral-900/60 border border-neutral-800 hover:border-purple-500/50 rounded-2xl p-5 cursor-pointer transition-all hover:shadow-2xl hover:shadow-purple-900/10 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-neutral-950/80 pointer-events-none"></div>
                 
@@ -101,14 +101,14 @@ export default function CharacterSelection() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate group-hover:text-red-400 transition-colors">
+                    <h3 className="text-lg font-bold text-white truncate group-hover:text-purple-400 transition-colors">
                       {char.name || 'Sem Nome'}
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="inline-flex items-center rounded-md bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300 ring-1 ring-inset ring-neutral-700/50">
                         Nível {char.level || 1}
                       </span>
-                      <span className="inline-flex items-center rounded-md bg-red-900/20 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-900/30">
+                      <span className="inline-flex items-center rounded-md bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-400 ring-1 ring-inset ring-purple-900/30">
                         {char.className}
                       </span>
                     </div>
