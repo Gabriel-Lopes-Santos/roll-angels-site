@@ -49,7 +49,9 @@ export default function DMDashboard() {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session || session.user.email !== 'gabrielsantos-2003@hotmail.com') {
+      const isDM = await isCurrentUserDM();
+
+      if (!session || !isDM) {
         navigate('/selecao');
         return;
       }
@@ -75,11 +77,39 @@ export default function DMDashboard() {
     if (!window.confirm(`Aprovar a ficha de ${req.character_data.name}?`)) return;
     setProcessing(true);
     try {
+      // Fetch IDs se estiverem faltando (para compatibilidade com pedidos antigos)
+      let r_id = req.character_data.race_id;
+      if (!r_id) {
+         const { data: rData } = await supabase.from('race').select('id').or(`name.eq."${req.character_data.race}",name_pt.eq."${req.character_data.race}"`).maybeSingle();
+         if (rData) r_id = rData.id;
+      }
+
+      let sub_r_id = req.character_data.sub_race_id;
+      if (!sub_r_id && req.character_data.sub_race) {
+         const { data: srData } = await supabase.from('sub_race').select('id').or(`name.eq."${req.character_data.sub_race}",name_pt.eq."${req.character_data.sub_race}"`).maybeSingle();
+         if (srData) sub_r_id = srData.id;
+      }
+
+      let cla_id = req.character_data.class_id;
+      if (!cla_id) {
+         const { data: cData } = await supabase.from('classes').select('id').or(`name.eq."${req.character_data.class}",name_pt.eq."${req.character_data.class}"`).maybeSingle();
+         if (cData) cla_id = cData.id;
+      }
+
+      let bg_id = req.character_data.background_id;
+      if (!bg_id && req.character_data.background) {
+         const { data: bgData } = await supabase.from('background').select('id').or(`name.eq."${req.character_data.background}",name_pt.eq."${req.character_data.background}"`).maybeSingle();
+         if (bgData) bg_id = bgData.id;
+      }
+
       const charSheetPayload = {
         name: req.character_data.name,
         owner_id: req.user_id,
         level: 1,
         type: 'character',
+        race_id: r_id || null,
+        sub_race_id: sub_r_id || null,
+        background_id: bg_id || null,
         str: req.character_data.attributes.str,
         dex: req.character_data.attributes.dex,
         con: req.character_data.attributes.con,
@@ -100,6 +130,27 @@ export default function DMDashboard() {
         alert("Erro ao criar na char_sheet: " + charErr.message);
         setProcessing(false);
         return;
+      }
+
+      // Adicionar char_class
+      if (cla_id) {
+        await supabase.from('char_class').insert([{
+           sheet_id: newChar.id,
+           class_id: cla_id,
+           subclass_id: req.character_data.subclass_id || null,
+           level: 1
+        }]);
+      }
+
+      // Adicionar proficiências
+      if (req.character_data.skill_ids && req.character_data.skill_ids.length > 0) {
+        const profRows = req.character_data.skill_ids.map(skillId => ({
+           sheet_id: newChar.id,
+           skill_id: skillId,
+           especialization: false,
+           source: 'Nível 1'
+        }));
+        await supabase.from('char_proficiencies').insert(profRows);
       }
 
       await updateRequestStatus(req.id, 'approved');

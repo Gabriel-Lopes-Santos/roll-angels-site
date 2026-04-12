@@ -736,3 +736,28 @@ export async function approveFullCreation(req) {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Verifica se o usuário autenticado possui cargo de Mestre (DM).
+ */
+export async function isCurrentUserDM() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return false;
+
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('is_dm')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao verificar cargo:", error);
+      return false;
+    }
+    
+    return data?.is_dm || false;
+  } catch (err) {
+    return false;
+  }
+}

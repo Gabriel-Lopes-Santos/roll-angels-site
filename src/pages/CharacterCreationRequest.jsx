@@ -361,6 +361,13 @@ export default function CharacterCreationRequest() {
       class: getLabel(dbData.classes, formData.class) || formData.class,
       subclass: formData.subclass ? (subclasses.find(s => s.id == formData.subclass)?.name_pt || formData.subclass) : undefined,
       background: getLabel(dbData.backgrounds, formData.background) || formData.background,
+      
+      race_id: formData.race ? Number(formData.race) : null,
+      sub_race_id: formData.sub_race ? Number(formData.sub_race) : null,
+      class_id: formData.class ? Number(formData.class) : null,
+      subclass_id: formData.subclass ? Number(formData.subclass) : null,
+      background_id: formData.background ? Number(formData.background) : null,
+
       attributes: {
         str: (attrs.for || 0) + (activeBonuses.for || 0) + (wildcardBonuses.for || 0),
         dex: (attrs.des || 0) + (activeBonuses.des || 0) + (wildcardBonuses.des || 0),
@@ -370,6 +377,7 @@ export default function CharacterCreationRequest() {
         cha: (attrs.car || 0) + (activeBonuses.car || 0) + (wildcardBonuses.car || 0),
       },
       skills: skillsNames,
+      skill_ids: formData.skills,
       notes: formData.notes,
       roll_count: rollHistory.length,
       rolled_stats: rollHistory[activeRollIndex] || []

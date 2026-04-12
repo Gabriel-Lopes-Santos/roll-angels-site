@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getUserCharacters, signOut, getUserPendingRequest, getUserAwaitingFullRequests } from '../lib/supabaseClient';
+import { supabase, getUserCharacters, signOut, getUserPendingRequest, getUserAwaitingFullRequests, isCurrentUserDM } from '../lib/supabaseClient';
 import { LogOut, User, Shield, Loader2, PlusCircle, Clock, ScrollText } from 'lucide-react';
 
 export default function CharacterSelection() {
@@ -10,6 +10,7 @@ export default function CharacterSelection() {
   const [fullCreationRequests, setFullCreationRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [isDM, setIsDM] = useState(false);
 
   useEffect(() => {
     const checkAuthAndLoad = async () => {
@@ -30,19 +31,21 @@ export default function CharacterSelection() {
       }
 
       setUser(session.user);
-      const { data: chars } = await getUserCharacters(session.user.id);
+      
+      const [charsResult, requestResult, fullReqsResult, dmStatus] = await Promise.all([
+        getUserCharacters(session.user.id),
+        getUserPendingRequest(session.user.id),
+        getUserAwaitingFullRequests(session.user.id),
+        isCurrentUserDM()
+      ]);
 
-      if (chars) {
-        setCharacters(chars);
+      if (charsResult.data) {
+        setCharacters(charsResult.data);
       }
 
-      // Check for pending level 1 request
-      const { data: request } = await getUserPendingRequest(session.user.id);
-      setPendingRequest(request);
-
-      // Check for DM-initiated full creation requests
-      const { data: fullReqs } = await getUserAwaitingFullRequests(session.user.id);
-      setFullCreationRequests(fullReqs || []);
+      setPendingRequest(requestResult);
+      setFullCreationRequests(fullReqsResult || []);
+      setIsDM(dmStatus);
 
       setLoading(false);
     };
@@ -54,8 +57,6 @@ export default function CharacterSelection() {
     await signOut();
     navigate('/login');
   };
-
-  const isDM = user?.email === 'gabrielsantos-2003@hotmail.com';
 
   if (loading) {
     return (
