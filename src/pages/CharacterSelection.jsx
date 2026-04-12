@@ -43,8 +43,8 @@ export default function CharacterSelection() {
         setCharacters(charsResult.data);
       }
 
-      setPendingRequest(requestResult);
-      setFullCreationRequests(fullReqsResult || []);
+      setPendingRequest(requestResult.data);
+      setFullCreationRequests(fullReqsResult.data || []);
       setIsDM(dmStatus);
 
       setLoading(false);
