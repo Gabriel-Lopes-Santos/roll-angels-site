@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { normalizeSheetAccent } from './sheetTheme.js';
 
 const supabaseUrl = 'https://zpcpcydqutomotjybuge.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwY3BjeWRxdXRvbW90anlidWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MjkwNDgsImV4cCI6MjA4MzQwNTA0OH0.yXAdoOu53FjReFna8aLsx79HQtBZ1-tTnL1YxXPG5yQ';
@@ -17,6 +18,20 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: true,
   },
 });
+
+/** Persiste a cor de tema da ficha em user_metadata (sheet_accent). */
+export async function updateUserSheetAccent(hex) {
+  try {
+    const accent = normalizeSheetAccent(hex);
+    const { error } = await supabase.auth.updateUser({
+      data: { sheet_accent: accent },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true, accent };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
 
 export async function getCharacterProfile(charSheetId) {
   try {
@@ -39,7 +54,7 @@ export async function getCharacterProfile(charSheetId) {
         *,
         race(name, name_pt),
         sub_race(name, name_pt),
-        char_class(level, classes(name)),
+        char_class(level, classes(name, name_pt)),
         char_proficiencies(skill_id, especialization)
       `)
       .eq('id', charSheetId)
@@ -51,9 +66,9 @@ export async function getCharacterProfile(charSheetId) {
     }
 
     // Adaptando o char_class
-    const charClassDetails = charData.char_class && charData.char_class.length > 0 
-      ? charData.char_class[0].classes?.name 
-      : 'Sem classe';
+    const cls = charData.char_class?.[0]?.classes;
+    const charClassDetails =
+      cls ? (cls.name_pt || cls.name || 'Sem classe') : 'Sem classe';
 
     const level = charData.level || 1;
     const profBonus = charData.proficiency_bonus || 2;

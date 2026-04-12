@@ -46,6 +46,41 @@ const ATTR_LABELS = {
   cha: { label: 'CAR', name: 'Carisma' },
 };
 
+/** Fora do page: definir dentro recria o tipo a cada render e o React remonta os inputs (perda de foco). */
+function SectionHeader({ sectionKey, title, icon, color = 'text-purple-400', isOpen, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(sectionKey)}
+      className="w-full flex items-center justify-between p-4 bg-neutral-900 hover:bg-neutral-800/80 rounded-xl border border-neutral-800 transition-colors group"
+    >
+      <div className="flex items-center gap-3">
+        <span className={`material-symbols-outlined text-xl ${color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+        <h2 className="text-lg font-bold text-white tracking-tight">{title}</h2>
+      </div>
+      {isOpen
+        ? <ChevronUp className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
+        : <ChevronDown className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
+      }
+    </button>
+  );
+}
+
+function InputField({ label, name, type = 'text', value, placeholder, className = '', onChange }) {
+  return (
+    <div className={className}>
+      <label className="block text-xs font-bold text-neutral-400 mb-1.5 uppercase tracking-wider">{label}</label>
+      <input
+        type={type} name={name}
+        value={value}
+        onChange={(e) => onChange(name, e.target.value)}
+        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 placeholder-neutral-600"
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
 export default function CharacterFullCreation() {
   const navigate = useNavigate();
   const { requestId } = useParams();
@@ -290,55 +325,6 @@ export default function CharacterFullCreation() {
   const languages = dbData.sensesLanguages.filter(s => s.type === 'language');
   const senses = dbData.sensesLanguages.filter(s => s.type === 'senses');
 
-  // Section header component
-  const SectionHeader = ({ sectionKey, title, icon, color = 'text-purple-400' }) => (
-    <button
-      type="button"
-      onClick={() => toggleSection(sectionKey)}
-      className="w-full flex items-center justify-between p-4 bg-neutral-900 hover:bg-neutral-800/80 rounded-xl border border-neutral-800 transition-colors group"
-    >
-      <div className="flex items-center gap-3">
-        <span className={`material-symbols-outlined text-xl ${color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
-        <h2 className="text-lg font-bold text-white tracking-tight">{title}</h2>
-      </div>
-      {openSections[sectionKey]
-        ? <ChevronUp className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
-        : <ChevronDown className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
-      }
-    </button>
-  );
-
-  // Input helpers
-  const InputField = ({ label, name, type = 'text', value, placeholder, className = '' }) => (
-    <div className={className}>
-      <label className="block text-xs font-bold text-neutral-400 mb-1.5 uppercase tracking-wider">{label}</label>
-      <input
-        type={type} name={name}
-        value={value}
-        onChange={(e) => handleChange(name, type === 'number' ? e.target.value : e.target.value)}
-        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 placeholder-neutral-600"
-        placeholder={placeholder}
-      />
-    </div>
-  );
-
-  // Toggle pill for multi-selects
-  const TogglePill = ({ item, isSelected, onClick, colorScheme = 'purple' }) => {
-    const colors = {
-      purple: isSelected ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/40' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600',
-      emerald: isSelected ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/40' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600',
-      red: isSelected ? 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-900/40' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600',
-      blue: isSelected ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/40' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600',
-      amber: isSelected ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-900/40' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600',
-    };
-    return (
-      <button type="button" onClick={onClick}
-        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${colors[colorScheme]}`}>
-        {item.name_pt || item.name}
-      </button>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-200 font-sans p-4 sm:p-8 relative overflow-x-hidden">
       <div className="max-w-4xl mx-auto relative z-10">
@@ -359,11 +345,11 @@ export default function CharacterFullCreation() {
         <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* ─── SEÇÃO 1: IDENTIDADE ─── */}
-          <SectionHeader sectionKey="identity" title="Identidade & Origem" icon="badge" />
+          <SectionHeader sectionKey="identity" title="Identidade & Origem" icon="badge" isOpen={openSections.identity} onToggle={toggleSection} />
           {openSections.identity && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 space-y-6 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InputField label="Nome do Aventureiro *" name="name" value={form.name} placeholder="Ex: Shan Wu, Lorrander..." />
+                <InputField label="Nome do Aventureiro *" name="name" value={form.name} placeholder="Ex: Shan Wu, Lorrander..." onChange={handleChange} />
 
                 <div>
                   <label className="block text-xs font-bold text-neutral-400 mb-1.5 uppercase tracking-wider">Classe</label>
@@ -408,26 +394,26 @@ export default function CharacterFullCreation() {
           )}
 
           {/* ─── SEÇÃO 2: NÍVEL & COMBATE ─── */}
-          <SectionHeader sectionKey="combat" title="Nível & Combate" icon="swords" color="text-red-400" />
+          <SectionHeader sectionKey="combat" title="Nível & Combate" icon="swords" color="text-red-400" isOpen={openSections.combat} onToggle={toggleSection} />
           {openSections.combat && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 animate-in fade-in duration-300">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <InputField label="Nível" name="level" type="number" value={form.level} placeholder="1" />
-                <InputField label="XP" name="exp" type="number" value={form.exp} placeholder="0" />
-                <InputField label="HP Atual" name="hit_points" type="number" value={form.hit_points} placeholder="10" />
-                <InputField label="HP Máximo" name="hit_points_max" type="number" value={form.hit_points_max} placeholder="10" />
-                <InputField label="CA (Armadura)" name="armor_class" type="number" value={form.armor_class} placeholder="10" />
-                <InputField label="Velocidade (m)" name="speed" type="number" value={form.speed} placeholder="9" />
-                <InputField label="Vel. Vôo (m)" name="speed_fly" type="number" value={form.speed_fly} placeholder="—" />
-                <InputField label="Vel. Nado (m)" name="speed_swim" type="number" value={form.speed_swim} placeholder="—" />
-                <InputField label="Percepção Passiva" name="passive_perception" type="number" value={form.passive_perception} placeholder="10" />
-                <InputField label="Bônus Prof." name="proficiency_bonus" type="number" value={form.proficiency_bonus} placeholder="2" />
+                <InputField label="Nível" name="level" type="number" value={form.level} placeholder="1" onChange={handleChange} />
+                <InputField label="XP" name="exp" type="number" value={form.exp} placeholder="0" onChange={handleChange} />
+                <InputField label="HP Atual" name="hit_points" type="number" value={form.hit_points} placeholder="10" onChange={handleChange} />
+                <InputField label="HP Máximo" name="hit_points_max" type="number" value={form.hit_points_max} placeholder="10" onChange={handleChange} />
+                <InputField label="CA (Armadura)" name="armor_class" type="number" value={form.armor_class} placeholder="10" onChange={handleChange} />
+                <InputField label="Velocidade (m)" name="speed" type="number" value={form.speed} placeholder="9" onChange={handleChange} />
+                <InputField label="Vel. Vôo (m)" name="speed_fly" type="number" value={form.speed_fly} placeholder="—" onChange={handleChange} />
+                <InputField label="Vel. Nado (m)" name="speed_swim" type="number" value={form.speed_swim} placeholder="—" onChange={handleChange} />
+                <InputField label="Percepção Passiva" name="passive_perception" type="number" value={form.passive_perception} placeholder="10" onChange={handleChange} />
+                <InputField label="Bônus Prof." name="proficiency_bonus" type="number" value={form.proficiency_bonus} placeholder="2" onChange={handleChange} />
               </div>
             </div>
           )}
 
           {/* ─── SEÇÃO 3: ATRIBUTOS ─── */}
-          <SectionHeader sectionKey="attributes" title="Atributos" icon="monitoring" color="text-emerald-400" />
+          <SectionHeader sectionKey="attributes" title="Atributos" icon="monitoring" color="text-emerald-400" isOpen={openSections.attributes} onToggle={toggleSection} />
           {openSections.attributes && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 animate-in fade-in duration-300">
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
@@ -461,7 +447,7 @@ export default function CharacterFullCreation() {
           )}
 
           {/* ─── SEÇÃO 4: PROFICIÊNCIAS ─── */}
-          <SectionHeader sectionKey="proficiencies" title="Proficiências" icon="stars" color="text-blue-400" />
+          <SectionHeader sectionKey="proficiencies" title="Proficiências" icon="stars" color="text-blue-400" isOpen={openSections.proficiencies} onToggle={toggleSection} />
           {openSections.proficiencies && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 space-y-6 animate-in fade-in duration-300">
 
@@ -528,7 +514,7 @@ export default function CharacterFullCreation() {
           )}
 
           {/* ─── SEÇÃO 5: SENTIDOS & IDIOMAS ─── */}
-          <SectionHeader sectionKey="sensesLangs" title="Sentidos & Idiomas" icon="translate" color="text-cyan-400" />
+          <SectionHeader sectionKey="sensesLangs" title="Sentidos & Idiomas" icon="translate" color="text-cyan-400" isOpen={openSections.sensesLangs} onToggle={toggleSection} />
           {openSections.sensesLangs && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 space-y-6 animate-in fade-in duration-300">
 
@@ -614,7 +600,7 @@ export default function CharacterFullCreation() {
           )}
 
           {/* ─── SEÇÃO 6: RESISTÊNCIAS, IMUNIDADES, VULNERABILIDADES ─── */}
-          <SectionHeader sectionKey="defenses" title="Resistências, Imunidades & Vulnerabilidades" icon="shield_with_heart" color="text-amber-400" />
+          <SectionHeader sectionKey="defenses" title="Resistências, Imunidades & Vulnerabilidades" icon="shield_with_heart" color="text-amber-400" isOpen={openSections.defenses} onToggle={toggleSection} />
           {openSections.defenses && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 space-y-6 animate-in fade-in duration-300">
 
@@ -727,7 +713,7 @@ export default function CharacterFullCreation() {
           )}
 
           {/* ─── SEÇÃO 7: NOTAS ─── */}
-          <SectionHeader sectionKey="notes" title="Notas Adicionais" icon="sticky_note_2" color="text-neutral-400" />
+          <SectionHeader sectionKey="notes" title="Notas Adicionais" icon="sticky_note_2" color="text-neutral-400" isOpen={openSections.notes} onToggle={toggleSection} />
           {openSections.notes && (
             <div className="bg-neutral-900/40 p-6 rounded-2xl border border-neutral-800 animate-in fade-in duration-300">
               <textarea

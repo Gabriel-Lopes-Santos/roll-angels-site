@@ -103,11 +103,11 @@ export default function StatsTab({ character }) {
           })}
         </div>
 
-        {/* Skills Section */}
+        {/* Skills Section: nomes com tema; expertise com variante neon */}
         <div className="bg-surface-container p-6 rounded">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
-            <h4 className="font-['Space_Grotesk'] text-xs font-black tracking-[0.2em] uppercase text-primary">PERÍCIAS</h4>
-            <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-widest text-secondary">
+            <h4 className="font-['Space_Grotesk'] text-xs font-black tracking-[0.2em] uppercase text-sheet-accent">PERÍCIAS</h4>
+            <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-widest text-sheet-accent-weak">
               BÔNUS DE PROFICIÊNCIA: +{character.stats.proficiencyBonus}
             </span>
           </div>
@@ -115,23 +115,48 @@ export default function StatsTab({ character }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-12">
             {character.skills && character.skills.map((skill) => {
               const ptAbilityLabel = skill.ability ? getAttrBadge(skill.ability.toLowerCase()).label : '';
+              const nameClass = !skill.isProficient
+                ? 'text-on-surface'
+                : skill.isExpertise
+                  ? 'text-sheet-accent-neon'
+                  : 'text-sheet-accent';
+              const abilityClass = !skill.isProficient
+                ? 'text-on-surface-variant/40'
+                : skill.isExpertise
+                  ? 'text-sheet-accent-weak'
+                  : 'text-sheet-accent-faint';
               return (
                 <div key={skill.id} className="flex items-center justify-between py-2 border-b border-white/5 hover:bg-white/5 px-2 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    {/* Proficiency Icon */}
+                  <div className="flex items-center gap-3 min-w-0">
                     {skill.isProficient ? (
-                      <div className={`w-3 h-3 border ${skill.isExpertise ? 'border-secondary/40' : 'border-primary/40'} rounded-[2px] flex items-center justify-center`}>
-                        <div className={`w-1.5 h-1.5 ${skill.isExpertise ? 'bg-secondary' : 'bg-primary'} rounded-[1px]`}></div>
+                      <div
+                        className={`w-3 h-3 shrink-0 rounded-[2px] flex items-center justify-center ${
+                          skill.isExpertise ? 'border-2 border-sheet-accent-neon' : 'border border-sheet-accent-soft'
+                        }`}
+                      >
+                        <div
+                          className={`w-1.5 h-1.5 rounded-[1px] ${skill.isExpertise ? 'bg-sheet-accent-neon' : 'bg-sheet-accent'}`}
+                        />
                       </div>
                     ) : (
-                      <div className="w-3 h-3 border border-white/10 rounded-[2px]"></div>
+                      <div className="w-3 h-3 shrink-0 border border-white/10 rounded-[2px]" />
                     )}
-                    
-                    <span className="text-[10px] font-black tracking-widest uppercase">
-                      {skill.name} <span className="text-on-surface-variant/40 font-bold ml-1">({ptAbilityLabel})</span>
+
+                    <span className="text-[10px] font-black tracking-widest uppercase min-w-0">
+                      <span className={nameClass}>{skill.name}</span>
+                      {' '}
+                      <span className={`font-bold ml-1 ${abilityClass}`}>({ptAbilityLabel})</span>
                     </span>
                   </div>
-                  <span className={`text-xs font-bold ${skill.isProficient ? 'text-primary' : 'opacity-40'}`}>
+                  <span
+                    className={`text-xs font-bold shrink-0 tabular-nums ${
+                      !skill.isProficient
+                        ? 'opacity-40'
+                        : skill.isExpertise
+                          ? 'text-sheet-accent-neon'
+                          : 'text-sheet-accent'
+                    }`}
+                  >
                     {skill.totalMod}
                   </span>
                 </div>
@@ -156,7 +181,7 @@ export default function StatsTab({ character }) {
           <div className="space-y-1">
             <div className="flex justify-between py-2 border-b border-white/5 last:border-0">
                <span className="text-xs font-medium opacity-80">Inventário Completo</span>
-               <span className="text-xs font-bold text-primary">Aba: Inv</span>
+               <span className="text-xs font-bold text-tertiary">Aba: Inv</span>
             </div>
             {/* TODO: In the future, grab character.inventory.items to put here */}
           </div>

@@ -92,7 +92,7 @@ export default function PersonaTab({ character }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32 text-primary">
+      <div className="flex items-center justify-center py-32 text-sheet-accent">
         <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
@@ -104,17 +104,18 @@ export default function PersonaTab({ character }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-white/5 pb-4">
         <div>
-          <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-primary uppercase">Identidade & Descrição</p>
+          <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-sheet-accent-weak uppercase">Identidade & Descrição</p>
           <h3 className="font-['Space_Grotesk'] text-3xl font-black">PERSONA</h3>
         </div>
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving || !hasChanges}
           className={`flex items-center gap-2 px-5 py-2.5 rounded text-xs font-bold font-['Space_Grotesk'] tracking-widest uppercase transition-all duration-300
             ${saved
               ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
               : hasChanges
-                ? 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:scale-[1.02] active:scale-95'
+                ? 'bg-sheet-accent-subtle hover:bg-sheet-accent-muted text-sheet-accent border border-sheet-accent-soft hover:scale-[1.02] active:scale-95'
                 : 'bg-surface-container-high text-on-surface-variant/30 border border-white/5 cursor-not-allowed'
             }`}
         >
@@ -136,12 +137,12 @@ export default function PersonaTab({ character }) {
           {/* Group Header */}
           <div className="flex items-center gap-3 px-6 py-4 bg-surface-container-high border-b border-white/5">
             <span
-              className="material-symbols-outlined text-primary text-xl"
+              className="material-symbols-outlined text-sheet-accent-weak text-xl"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               {group.icon}
             </span>
-            <h4 className="font-['Space_Grotesk'] text-xs font-black tracking-[0.15em] uppercase text-primary">
+            <h4 className="font-['Space_Grotesk'] text-xs font-black tracking-[0.15em] uppercase text-sheet-accent-weak">
               {group.title}
             </h4>
           </div>
@@ -159,7 +160,7 @@ export default function PersonaTab({ character }) {
                   key={field.key}
                   className={`group ${field.fullWidth ? 'col-span-full' : ''}`}
                 >
-                  <label className="block text-[10px] font-black tracking-[0.15em] uppercase text-on-surface-variant/50 mb-2 font-['Space_Grotesk'] group-focus-within:text-primary transition-colors">
+                  <label className="block text-[10px] font-black tracking-[0.15em] uppercase text-sheet-accent-weak mb-2 font-['Space_Grotesk'] group-focus-within:text-sheet-accent transition-colors">
                     {field.label}
                   </label>
                   {field.multiline ? (
@@ -169,8 +170,8 @@ export default function PersonaTab({ character }) {
                       placeholder={field.placeholder}
                       rows={field.fullWidth ? 5 : 3}
                       className="w-full bg-surface-container-lowest text-on-surface p-3 rounded border border-white/5 
-                        focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200 
-                        text-sm font-['Inter'] leading-relaxed placeholder:text-on-surface-variant/20 
+                        focus:border-sheet-accent-soft transition-all duration-200 
+                        text-sm font-['Inter'] leading-relaxed placeholder-sheet-accent-faint 
                         resize-y outline-none hover:border-white/10"
                     />
                   ) : (
@@ -180,8 +181,8 @@ export default function PersonaTab({ character }) {
                       onChange={(e) => handleChange(field.key, e.target.value)}
                       placeholder={field.placeholder}
                       className="w-full bg-surface-container-lowest text-on-surface p-3 rounded border border-white/5 
-                        focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200 
-                        text-sm font-['Inter'] placeholder:text-on-surface-variant/20 
+                        focus:border-sheet-accent-soft transition-all duration-200 
+                        text-sm font-['Inter'] placeholder-sheet-accent-faint 
                         outline-none hover:border-white/10 h-11"
                     />
                   )}

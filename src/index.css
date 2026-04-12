@@ -67,17 +67,83 @@
   }
 }
 
-/* Custom Scrollbar for immersive feel */
+/* Tema da ficha (cor escolhida pelo usuário em --sheet-accent no CharacterSheet) */
+@layer utilities {
+  .text-sheet-accent {
+    color: var(--sheet-accent, #9b2d42);
+  }
+  .bg-sheet-accent {
+    background-color: var(--sheet-accent, #9b2d42);
+  }
+  .border-sheet-accent {
+    border-color: var(--sheet-accent, #9b2d42);
+  }
+  .bg-sheet-accent-subtle {
+    background-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 12%, transparent);
+  }
+  .hover\:bg-sheet-accent-muted:hover {
+    background-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 20%, transparent);
+  }
+  .border-sheet-accent-soft {
+    border-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 40%, transparent);
+  }
+  .ring-sheet-accent-soft {
+    --tw-ring-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 28%, transparent);
+  }
+  /* Títulos / rótulos: tom do tema mais suave (mistura com on-surface-variant) */
+  .text-sheet-accent-weak {
+    color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 44%, var(--color-on-surface-variant));
+  }
+  /* Placeholders: ainda mais discretos */
+  .text-sheet-accent-faint {
+    color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 26%, var(--color-on-surface-variant));
+  }
+  .placeholder-sheet-accent-faint::placeholder {
+    color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 9%, var(--color-on-surface-variant));
+    opacity: 0.48;
+  }
+  /* Especialização: mesma cor do tema, mais “neon” (clareia + brilho) */
+  .text-sheet-accent-neon {
+    color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 84%, white);
+    text-shadow:
+      0 0 10px color-mix(in srgb, var(--sheet-accent, #9b2d42) 48%, transparent),
+      0 0 22px color-mix(in srgb, var(--sheet-accent, #9b2d42) 22%, transparent);
+  }
+  .border-sheet-accent-neon {
+    border-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 68%, white);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--sheet-accent, #9b2d42) 32%, transparent);
+  }
+  .bg-sheet-accent-neon {
+    background-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 72%, white);
+  }
+}
+
+/* Scrollbar padrão (demais páginas) */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-surface); 
+  background: var(--color-surface);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-variant); 
+  background: var(--color-surface-variant);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary); 
+  background: var(--color-primary);
+}
+
+/* Ficha: barra de rolagem acompanha --sheet-accent (classe no html/body pelo CharacterSheet) */
+html.sheet-themed-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sheet-accent, #9b2d42) 36%, var(--color-surface-variant)) var(--color-surface);
+}
+html.sheet-themed-scroll::-webkit-scrollbar-thumb,
+body.sheet-themed-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sheet-accent, #9b2d42) 34%, var(--color-surface-variant));
+  border-radius: 4px;
+}
+html.sheet-themed-scroll::-webkit-scrollbar-thumb:hover,
+body.sheet-themed-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--sheet-accent, #9b2d42) 52%, var(--color-surface-variant));
 }

@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacterProfile, updateAvatar, uploadAvatarFile } from '../lib/supabaseClient';
+import { getCharacterProfile, updateAvatar, uploadAvatarFile, supabase } from '../lib/supabaseClient';
+import { DEFAULT_SHEET_ACCENT, getSheetAccentFromUser } from '../lib/sheetTheme';
 import { Loader2, ArrowLeft, Image as ImageIcon, Trash2, Check, X, User } from 'lucide-react';
 import StatsTab from './tabs/StatsTab';
 import InventarioTab from './tabs/InventarioTab';
 import MagiasTab from './tabs/MagiasTab';
 import PersonaTab from './tabs/PersonaTab';
+import SheetThemeSettingsModal from './SheetThemeSettingsModal';
+import SiteSettingsDropdown from './SiteSettingsDropdown';
 
 export default function CharacterSheet() {
   const { id } = useParams();
@@ -21,6 +24,51 @@ export default function CharacterSheet() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+
+  const [sheetAccent, setSheetAccent] = useState(DEFAULT_SHEET_ACCENT);
+  const [isThemeSettingsOpen, setIsThemeSettingsOpen] = useState(false);
+  const [isSiteSettingsOpen, setIsSiteSettingsOpen] = useState(false);
+  const siteSettingsRef = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) setSheetAccent(getSheetAccentFromUser(session.user));
+    })();
+  }, []);
+
+  /** Tema no documento: --sheet-accent + scrollbar; remove ao sair da ficha */
+  useEffect(() => {
+    if (!character) return undefined;
+    const root = document.documentElement;
+    const { body } = document;
+    root.classList.add('sheet-themed-scroll');
+    body.classList.add('sheet-themed-scroll');
+    root.style.setProperty('--sheet-accent', sheetAccent);
+    return () => {
+      root.classList.remove('sheet-themed-scroll');
+      body.classList.remove('sheet-themed-scroll');
+      root.style.removeProperty('--sheet-accent');
+    };
+  }, [character, sheetAccent]);
+
+  useEffect(() => {
+    if (!isSiteSettingsOpen) return undefined;
+    const close = (e) => {
+      if (siteSettingsRef.current && !siteSettingsRef.current.contains(e.target)) {
+        setIsSiteSettingsOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIsSiteSettingsOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isSiteSettingsOpen]);
 
   useEffect(() => {
     async function loadData() {
@@ -90,15 +138,9 @@ export default function CharacterSheet() {
   if (errorMsg) return <div className="flex h-screen w-full items-center justify-center p-8 text-center text-error font-serif text-2xl">{errorMsg}</div>;
   if (!character) return <div className="p-8 text-center text-error">Falha ao carregar personagem.</div>;
 
-  // Lógica de Formatação da Raça/Sub-raça
-  const isHumanoid = character.race?.toLowerCase() === 'humanoid' || character.race?.toLowerCase() === 'humanoide';
-  let displayRace = character.race || 'SEM RAÇA';
-
-  if (isHumanoid) {
-    displayRace = character.sub_race ? character.sub_race : character.race;
-  } else if (character.sub_race) {
-    displayRace = `${character.race} ${character.sub_race}`;
-  }
+  // Sub-raça já vem em pt-br do perfil; se existir, mostra só ela (evita "Draconato Draconato Cromático").
+  const sub = typeof character.sub_race === 'string' ? character.sub_race.trim() : '';
+  const displayRace = sub ? sub : (character.race || 'SEM RAÇA');
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
@@ -110,11 +152,11 @@ export default function CharacterSheet() {
             onClick={() => navigate('/selecao')}
             className="flex items-center justify-center p-2 rounded-full hover:bg-white/10 transition-colors mr-2"
           >
-            <ArrowLeft className="w-6 h-6 text-purple-400" />
+            <ArrowLeft className="w-6 h-6 text-sheet-accent" />
           </button>
           <div
             onClick={() => { setIsAvatarModalOpen(true); setPreviewUrl(character.avatar); }}
-            className="h-10 w-10 rounded-full overflow-hidden border-2 border-purple-400 cursor-pointer hover:border-purple-400/80 transition-all hover:scale-105 flex items-center justify-center bg-surface-container-highest"
+            className="h-10 w-10 rounded-full overflow-hidden border-2 border-sheet-accent cursor-pointer hover:opacity-90 transition-all hover:scale-105 flex items-center justify-center bg-surface-container-highest"
             title="Alterar Foto de Perfil"
           >
             {character.avatar ? (
@@ -124,12 +166,12 @@ export default function CharacterSheet() {
             )}
           </div>
           <div>
-            <h1 className="font-['Space_Grotesk'] text-lg font-black tracking-tighter text-purple-400 leading-none uppercase">{character.name}</h1>
+            <h1 className="font-['Space_Grotesk'] text-lg font-black tracking-tighter text-sheet-accent leading-none uppercase">{character.name}</h1>
             <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase opacity-60 whitespace-nowrap">
               <span>{character.class || 'SEM CLASSE'}</span>
-              <span className="text-purple-400">•</span>
+              <span className="text-sheet-accent opacity-100">•</span>
               <span>{displayRace}</span>
-              <span className="text-purple-400">•</span>
+              <span className="text-sheet-accent opacity-100">•</span>
               <span>Lvl {character.level || 1}</span>
             </div>
           </div>
@@ -137,17 +179,32 @@ export default function CharacterSheet() {
 
         <div className="flex items-center gap-4 md:gap-8">
           <div className="hidden md:flex items-center gap-6 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase text-neutral-400">
-            <button className="hover:text-purple-400 transition-colors">Histórico</button>
-            <button className="hover:text-purple-400 transition-colors">Mensagens</button>
+            <button type="button" className="hover:text-sheet-accent transition-colors">Histórico</button>
+            <button type="button" className="hover:text-sheet-accent transition-colors">Mensagens</button>
           </div>
 
           <div className="flex items-center gap-3 text-neutral-400">
-            <button className="hover:text-purple-400 transition-colors flex items-center justify-center">
+            <button type="button" className="hover:text-sheet-accent transition-colors flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">notifications</span>
             </button>
-            <button className="hover:text-purple-400 transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">settings</span>
-            </button>
+            <div className="relative" ref={siteSettingsRef}>
+              <button
+                type="button"
+                onClick={() => setIsSiteSettingsOpen((o) => !o)}
+                className={`hover:text-sheet-accent transition-colors flex items-center justify-center rounded-full p-1 ${isSiteSettingsOpen ? 'text-sheet-accent bg-white/5' : ''}`}
+                title="Configurações"
+                aria-expanded={isSiteSettingsOpen}
+                aria-haspopup="menu"
+              >
+                <span className="material-symbols-outlined text-[20px]">settings</span>
+              </button>
+              {isSiteSettingsOpen && (
+                <SiteSettingsDropdown
+                  onEditTheme={() => setIsThemeSettingsOpen(true)}
+                  onClose={() => setIsSiteSettingsOpen(false)}
+                />
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -160,11 +217,12 @@ export default function CharacterSheet() {
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-4 px-6 py-3 font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase transition-all duration-300
                   ${isActive
-                    ? 'bg-surface-container-high text-purple-400 border-l-4 border-purple-400'
-                    : 'text-neutral-400 hover:bg-surface-container hover:text-purple-400 border-l-4 border-transparent'
+                    ? 'bg-surface-container-high text-sheet-accent border-l-4 border-sheet-accent'
+                    : 'text-neutral-400 hover:bg-surface-container hover:text-sheet-accent border-l-4 border-transparent'
                   }`}
               >
                 <span className="material-symbols-outlined">{tab.icon}</span>
@@ -183,8 +241,16 @@ export default function CharacterSheet() {
         {activeTab === 'magias' && <MagiasTab character={character} />}
 
         {activeTab === 'missoes' && (
-          <div className="p-8 text-center text-on-surface-variant/40 font-['Space_Grotesk'] tracking-widest uppercase text-sm mt-20">
-            Aba de missões em construção
+          <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 mt-8">
+            <div className="flex justify-between items-end border-b border-white/5 pb-4">
+              <div>
+                <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-sheet-accent-weak uppercase">Objetivos</p>
+                <h3 className="font-['Space_Grotesk'] text-3xl font-black">MISSÕES</h3>
+              </div>
+            </div>
+            <div className="bg-surface-container p-8 rounded border border-outline-variant/10 text-center text-sheet-accent-faint font-['Space_Grotesk'] tracking-widest uppercase text-sm">
+              Aba de missões em construção
+            </div>
           </div>
         )}
 
@@ -192,28 +258,30 @@ export default function CharacterSheet() {
           <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-4">
               <div>
-                <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-primary uppercase">Mundo e Aventuras</p>
+                <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-sheet-accent-weak uppercase">Mundo e Aventuras</p>
                 <h3 className="font-['Space_Grotesk'] text-3xl font-black">DIÁRIO DE JOGO</h3>
               </div>
             </div>
 
             <div className="bg-surface-container p-6 rounded border border-outline-variant/10">
               <textarea
-                className="w-full min-h-[150px] bg-surface-container-lowest text-on-surface p-4 rounded outline-none border border-white/5 focus:border-primary/50 transition-colors resize-y text-sm font-['Inter'] leading-relaxed placeholder:text-on-surface-variant/30"
+                className="w-full min-h-[150px] bg-surface-container-lowest text-on-surface p-4 rounded outline-none border border-white/5 focus:border-sheet-accent-soft transition-colors resize-y text-sm font-['Inter'] leading-relaxed placeholder-sheet-accent-faint"
                 placeholder="Insira notas, acontecimentos ou informações importantes da sessão..."
               ></textarea>
               <div className="flex justify-end mt-4">
-                <button className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-6 py-2 rounded text-xs font-bold font-['Space_Grotesk'] tracking-widest uppercase transition-colors flex items-center gap-2">
+                <button
+                  type="button"
+                  className="bg-sheet-accent-subtle hover:bg-sheet-accent-muted text-sheet-accent border border-sheet-accent-soft px-6 py-2 rounded text-xs font-bold font-['Space_Grotesk'] tracking-widest uppercase transition-colors flex items-center gap-2"
+                >
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   Adicionar Bloco
                 </button>
               </div>
             </div>
 
-            {/* Exemplo de bloco salvo */}
             <div className="space-y-4 pt-4">
-              <p className="text-xs font-bold text-on-surface-variant/40 tracking-widest uppercase font-['Space_Grotesk']">Registros Anteriores</p>
-              <div className="bg-surface-container-highest p-6 rounded border-l-2 border-primary/40 relative group">
+              <p className="text-xs font-bold text-sheet-accent-weak tracking-widest uppercase font-['Space_Grotesk']">Registros Anteriores</p>
+              <div className="bg-surface-container-highest p-6 rounded border-l-2 border-sheet-accent relative group">
                 <p className="text-sm text-on-surface-variant leading-relaxed">
                   Espaço reservado para carregar os blocos do diário que foram salvos anteriormente.
                 </p>
@@ -231,9 +299,10 @@ export default function CharacterSheet() {
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center justify-center scale-100 active:scale-90 transition-transform w-20
-                ${isActive ? 'text-purple-400' : 'text-neutral-400 hover:text-purple-400'}`}
+                ${isActive ? 'text-sheet-accent' : 'text-neutral-400 hover:text-sheet-accent'}`}
             >
               <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "" }}>
                 {tab.icon}
@@ -316,6 +385,13 @@ export default function CharacterSheet() {
           </div>
         </div>
       )}
+
+      <SheetThemeSettingsModal
+        open={isThemeSettingsOpen}
+        onClose={() => setIsThemeSettingsOpen(false)}
+        currentAccent={sheetAccent}
+        onSaved={(accent) => setSheetAccent(accent)}
+      />
 
     </div>
   );
