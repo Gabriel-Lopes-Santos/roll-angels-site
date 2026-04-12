@@ -9,6 +9,7 @@ import {
   getAllPendingFullRequests,
   approveFullCreation,
   updateFullRequestStatus,
+  isCurrentUserDM,
 } from '../lib/supabaseClient';
 import { Loader2, Shield, Check, X, User, UserPlus, ScrollText } from 'lucide-react';
 

@@ -1,22 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
-const supabaseUrl = 'https://zpcpcydqutomotjybuge.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwY3BjeWRxdXRvbW90anlidWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MjkwNDgsImV4cCI6MjA4MzQwNTA0OH0.yXAdoOu53FjReFna8aLsx79HQtBZ1-tTnL1YxXPG5yQ';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const content = fs.readFileSync('src/lib/supabaseClient.js');
 
-async function run() {
-    const raceName = "Humano";
-    // This is what is currently running:
-    const { data: d1, error: e1 } = await supabase.from('race').select('id').or(`name.eq."${raceName}",name_pt.eq."${raceName}"`);
-    console.log("With quotes:", d1, e1);
+const cleanContentBuffer = content.slice(0, 23394);
+const cleanText = cleanContentBuffer.toString('utf8');
 
-    // This is without quotes:
-    const { data: d2, error: e2 } = await supabase.from('race').select('id').or(`name.eq.${raceName},name_pt.eq.${raceName}`);
-    console.log("Without quotes:", d2, e2);
-    
-    // ilike example
-    const { data: d3, error: e3 } = await supabase.from('race').select('id').or(`name.ilike.%${raceName}%,name_pt.ilike.%${raceName}%`);
-    console.log("ilike:", d3, e3);
+const newFunc = `
+export async function isCurrentUserDM() {
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.user?.email === 'gabrielsantos-2003@hotmail.com';
 }
+`;
 
-run();
+fs.writeFileSync('src/lib/supabaseClient.js', cleanText + newFunc);
+console.log("Fixed!");
