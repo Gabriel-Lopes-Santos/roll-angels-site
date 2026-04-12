@@ -79,26 +79,42 @@ export default function DMDashboard() {
     try {
       // Fetch IDs se estiverem faltando (para compatibilidade com pedidos antigos)
       let r_id = req.character_data.race_id;
-      if (!r_id) {
-         const { data: rData } = await supabase.from('race').select('id').or(`name.eq."${req.character_data.race}",name_pt.eq."${req.character_data.race}"`).maybeSingle();
+      if (!r_id && req.character_data.race) {
+         let { data: rData } = await supabase.from('race').select('id').eq('name', req.character_data.race).maybeSingle();
+         if (!rData) {
+            const { data } = await supabase.from('race').select('id').eq('name_pt', req.character_data.race).maybeSingle();
+            rData = data;
+         }
          if (rData) r_id = rData.id;
       }
 
       let sub_r_id = req.character_data.sub_race_id;
       if (!sub_r_id && req.character_data.sub_race) {
-         const { data: srData } = await supabase.from('sub_race').select('id').or(`name.eq."${req.character_data.sub_race}",name_pt.eq."${req.character_data.sub_race}"`).maybeSingle();
+         let { data: srData } = await supabase.from('sub_race').select('id').eq('name', req.character_data.sub_race).maybeSingle();
+         if (!srData) {
+            const { data } = await supabase.from('sub_race').select('id').eq('name_pt', req.character_data.sub_race).maybeSingle();
+            srData = data;
+         }
          if (srData) sub_r_id = srData.id;
       }
 
       let cla_id = req.character_data.class_id;
-      if (!cla_id) {
-         const { data: cData } = await supabase.from('classes').select('id').or(`name.eq."${req.character_data.class}",name_pt.eq."${req.character_data.class}"`).maybeSingle();
+      if (!cla_id && req.character_data.class) {
+         let { data: cData } = await supabase.from('classes').select('id').eq('name', req.character_data.class).maybeSingle();
+         if (!cData) {
+            const { data } = await supabase.from('classes').select('id').eq('name_pt', req.character_data.class).maybeSingle();
+            cData = data;
+         }
          if (cData) cla_id = cData.id;
       }
 
       let bg_id = req.character_data.background_id;
       if (!bg_id && req.character_data.background) {
-         const { data: bgData } = await supabase.from('background').select('id').or(`name.eq."${req.character_data.background}",name_pt.eq."${req.character_data.background}"`).maybeSingle();
+         let { data: bgData } = await supabase.from('background').select('id').eq('name', req.character_data.background).maybeSingle();
+         if (!bgData) {
+            const { data } = await supabase.from('background').select('id').eq('name_pt', req.character_data.background).maybeSingle();
+            bgData = data;
+         }
          if (bgData) bg_id = bgData.id;
       }
 
