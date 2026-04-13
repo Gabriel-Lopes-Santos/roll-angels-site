@@ -22,6 +22,18 @@ const ATTR_MAP = {
   int: 'Inteligência', sab: 'Sabedoria', car: 'Carisma'
 };
 
+const ALIGNMENTS = [
+  { id: 'LG', name_pt: 'Leal e Bom' },
+  { id: 'NG', name_pt: 'Neutro e Bom' },
+  { id: 'CG', name_pt: 'Caótico e Bom' },
+  { id: 'LN', name_pt: 'Leal e Neutro' },
+  { id: 'TN', name_pt: 'Neutro' },
+  { id: 'CN', name_pt: 'Caótico e Neutro' },
+  { id: 'LE', name_pt: 'Leal e Mau' },
+  { id: 'NE', name_pt: 'Neutro e Mau' },
+  { id: 'CE', name_pt: 'Caótico e Mau' },
+];
+
 export default function CharacterCreationRequest() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -51,6 +63,7 @@ export default function CharacterCreationRequest() {
     class: '',      // holds ID
     subclass: '',   // holds ID (only for level-1 subclass classes)
     background: '', // holds ID
+    alignment: 'TN', // holds ID
     attributes: { for: null, des: null, con: null, int: null, sab: null, car: null },
     skills: [],     // holds skill IDs
     notes: '',
@@ -354,13 +367,64 @@ export default function CharacterCreationRequest() {
 
     const skillsNames = formData.skills.map(id => getLabel(dbData.skills, id)).join(', ');
 
+    const raceLabel = getLabel(dbData.races, formData.race) || formData.race;
+    const classLabel = getLabel(dbData.classes, formData.class) || formData.class;
+
+    const baseStr = (attrs.for || 0) + (activeBonuses.for || 0) + (wildcardBonuses.for || 0);
+    const baseDex = (attrs.des || 0) + (activeBonuses.des || 0) + (wildcardBonuses.des || 0);
+    const baseCon = (attrs.con || 0) + (activeBonuses.con || 0) + (wildcardBonuses.con || 0);
+    const baseInt = (attrs.int || 0) + (activeBonuses.int || 0) + (wildcardBonuses.int || 0);
+    const baseWis = (attrs.sab || 0) + (activeBonuses.sab || 0) + (wildcardBonuses.sab || 0);
+    const baseCha = (attrs.car || 0) + (activeBonuses.car || 0) + (wildcardBonuses.car || 0);
+
+    const modCon = Math.floor((baseCon - 10) / 2);
+    const modDex = Math.floor((baseDex - 10) / 2);
+    const modWis = Math.floor((baseWis - 10) / 2);
+
+    let hitDie = 8;
+    const clLower = classLabel.toLowerCase();
+    if (clLower.includes('bárbaro') || clLower.includes('barbarian')) hitDie = 12;
+    else if (clLower.includes('guerreiro') || clLower.includes('fighter') || clLower.includes('paladino') || clLower.includes('paladin') || clLower.includes('patrulheiro') || clLower.includes('ranger')) hitDie = 10;
+    else if (clLower.includes('mago') || clLower.includes('wizard') || clLower.includes('feiticeiro') || clLower.includes('sorcerer')) hitDie = 6;
+
+    const hitPointsMax = hitDie + modCon;
+    const armorClass = 10 + modDex;
+
+    let size = 'Medium';
+    const raceLower = raceLabel.toLowerCase();
+    if (raceLower.includes('halfling') || raceLower.includes('pequenino') || raceLower.includes('gnom') || raceLower.includes('goblin') || raceLower.includes('kobold')) {
+      size = 'Small';
+    }
+
+    let speed = 9;
+    if (size === 'Small' || raceLower.includes('anão') || raceLower.includes('anao') || raceLower.includes('dwarf')) {
+      speed = 7.5;
+    }
+
+    let passivePerception = 10 + modWis;
+    const profBonus = 2;
+    
+    // Check if has Perception proficiency
+    let hasPerception = false;
+    for (let sId of formData.skills) {
+      const skillName = getLabel(dbData.skills, sId, 'name').toLowerCase();
+      if (skillName.includes('percepção') || skillName.includes('perception')) {
+        hasPerception = true;
+        break;
+      }
+    }
+    if (hasPerception) {
+      passivePerception += profBonus;
+    }
+
     const finalData = {
       name: formData.name,
-      race: getLabel(dbData.races, formData.race) || formData.race,
+      race: raceLabel,
       sub_race: getLabel(subRaces, formData.sub_race) || formData.sub_race,
-      class: getLabel(dbData.classes, formData.class) || formData.class,
+      class: classLabel,
       subclass: formData.subclass ? (subclasses.find(s => s.id == formData.subclass)?.name_pt || formData.subclass) : undefined,
       background: getLabel(dbData.backgrounds, formData.background) || formData.background,
+      alignment: formData.alignment,
       
       race_id: formData.race ? Number(formData.race) : null,
       sub_race_id: formData.sub_race ? Number(formData.sub_race) : null,
@@ -369,13 +433,24 @@ export default function CharacterCreationRequest() {
       background_id: formData.background ? Number(formData.background) : null,
 
       attributes: {
-        str: (attrs.for || 0) + (activeBonuses.for || 0) + (wildcardBonuses.for || 0),
-        dex: (attrs.des || 0) + (activeBonuses.des || 0) + (wildcardBonuses.des || 0),
-        con: (attrs.con || 0) + (activeBonuses.con || 0) + (wildcardBonuses.con || 0),
-        int: (attrs.int || 0) + (activeBonuses.int || 0) + (wildcardBonuses.int || 0),
-        wis: (attrs.sab || 0) + (activeBonuses.sab || 0) + (wildcardBonuses.sab || 0),
-        cha: (attrs.car || 0) + (activeBonuses.car || 0) + (wildcardBonuses.car || 0),
+        str: baseStr,
+        dex: baseDex,
+        con: baseCon,
+        int: baseInt,
+        wis: baseWis,
+        cha: baseCha,
       },
+
+      size,
+      speed,
+      armor_class: armorClass,
+      hit_points_max: hitPointsMax,
+      hit_points: hitPointsMax,
+      passive_perception: passivePerception,
+      proficiency_bonus: profBonus,
+      exp: 0,
+      level: 1,
+
       skills: skillsNames,
       skill_ids: formData.skills,
       notes: formData.notes,
@@ -481,6 +556,15 @@ export default function CharacterCreationRequest() {
                   options={dbData.backgrounds}
                   value={formData.background}
                   onChange={(val) => handleCombobox('background', val)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-1.5">Alinhamento</label>
+                <Combobox 
+                  options={ALIGNMENTS}
+                  value={formData.alignment}
+                  onChange={(val) => handleCombobox('alignment', val)}
                 />
               </div>
 

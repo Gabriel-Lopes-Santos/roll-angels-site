@@ -176,7 +176,11 @@ export default function CharacterSelection() {
 
                 <div className="relative z-10 flex items-start gap-4">
                   <div className="w-16 h-16 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0 border border-neutral-700 overflow-hidden">
-                    <User className="w-8 h-8 text-neutral-500" />
+                    {char.avatar_url ? (
+                      <img src={char.avatar_url} alt={char.name || 'Personagem'} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-8 h-8 text-neutral-500" />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -198,6 +202,17 @@ export default function CharacterSelection() {
                 </div>
               </div>
             ))}
+
+            {/* Novo Personagem Card */}
+            <div
+              onClick={() => navigate('/criacao')}
+              className="group flex flex-col items-center justify-center bg-neutral-900/30 border border-neutral-800 border-dashed hover:border-purple-500/50 rounded-2xl p-5 cursor-pointer transition-all hover:bg-neutral-900/60 min-h-[100px]"
+            >
+              <PlusCircle className="w-8 h-8 text-neutral-600 group-hover:text-purple-400 mb-2 transition-colors" />
+              <span className="text-sm font-medium text-neutral-400 group-hover:text-purple-300 transition-colors">
+                Novo Personagem
+              </span>
+            </div>
           </div>
         )}
 

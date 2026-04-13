@@ -55,10 +55,10 @@ export default function StatsTab({ character }) {
           {/* AC Card */}
           <div className="bg-surface-container-high p-6 flex items-center gap-6 group hover:bg-surface-bright transition-all rounded">
             <div className="w-16 h-16 bg-surface-container-lowest flex items-center justify-center border border-outline-variant/15 rounded">
-              <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
+              <span className="material-symbols-outlined text-slate-400 text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
             </div>
             <div>
-              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">Classe de Armadura</p>
+              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">Classe de Armadura</p>
               <p className="font-['Space_Grotesk'] text-4xl font-black">{character.stats.armorClass}</p>
             </div>
           </div>
@@ -66,10 +66,10 @@ export default function StatsTab({ character }) {
           {/* Initiative */}
           <div className="bg-surface-container-high p-6 flex items-center gap-6 group hover:bg-surface-bright transition-all rounded">
             <div className="w-16 h-16 bg-surface-container-lowest flex items-center justify-center border border-outline-variant/15 rounded">
-              <span className="material-symbols-outlined text-secondary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+              <span className="material-symbols-outlined text-green-700 text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
             </div>
             <div>
-              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">Iniciativa</p>
+              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-green-700 uppercase">Iniciativa</p>
               <p className="font-['Space_Grotesk'] text-4xl font-black">{getMod(character.attributes.dex)}</p>
             </div>
           </div>
@@ -79,22 +79,22 @@ export default function StatsTab({ character }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {attrEntries.map(([key, value]) => {
             const badge = getAttrBadge(key);
-            const textClass = badge.color === 'secondary' ? 'text-secondary' : 'text-primary-container';
-            const bgClass = badge.color === 'secondary' ? 'bg-secondary' : 'bg-primary-container';
             const isProficient = character.savingThrows?.[key];
+            const modVal = Math.floor((value - 10) / 2);
+            const modColorClass = modVal >= 0 ? 'text-green-500' : 'text-red-500';
 
             return (
-              <div key={key} className={`bg-surface-container p-4 border-l-2 border-${badge.color}/20 rounded-r`}>
+              <div key={key} className="bg-surface-container p-4 border-l-2 border-sheet-accent rounded-r">
                 <div className="flex justify-between items-start mb-1">
-                  <p className="text-[9px] font-black text-on-surface-variant opacity-40 uppercase tracking-widest">{badge.name}</p>
+                  <p className="text-[9px] font-black text-sheet-accent uppercase tracking-widest">{badge.name}</p>
                   <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full border border-${badge.color}/50 ${isProficient ? bgClass : 'bg-transparent'}`}></div>
-                    <span className={`text-[8px] font-bold ${textClass}`}>RESISTÊNCIA</span>
+                    <div className={`w-2 h-2 rounded-full border border-sheet-accent/50 ${isProficient ? 'bg-sheet-accent' : 'bg-transparent'}`}></div>
+                    <span className="text-[8px] font-bold text-sheet-accent opacity-30">RESISTÊNCIA</span>
                   </div>
                 </div>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="font-['Space_Grotesk'] text-xl font-bold">{value}</span>
-                  <span className={`text-xs font-bold ${textClass === 'text-secondary' ? 'text-secondary' : 'text-primary'}`}>
+                  <span className={`text-xs font-bold ${modColorClass}`}>
                     {getMod(value)}
                   </span>
                 </div>

@@ -122,7 +122,7 @@ export default function DMDashboard() {
       const charSheetPayload = {
         name: req.character_data.name,
         owner_id: req.user_id,
-        level: 1,
+        level: req.character_data.level || 1,
         type: 'character',
         race_id: r_id || null,
         sub_race_id: sub_r_id || null,
@@ -133,8 +133,15 @@ export default function DMDashboard() {
         int: req.character_data.attributes.int,
         wis: req.character_data.attributes.wis,
         cha: req.character_data.attributes.cha,
-        hit_points: 10,
-        hit_points_max: 10,
+        hit_points: req.character_data.hit_points || 10,
+        hit_points_max: req.character_data.hit_points_max || 10,
+        armor_class: req.character_data.armor_class || 10,
+        size: req.character_data.size || 'Medium',
+        speed: req.character_data.speed || 9,
+        passive_perception: req.character_data.passive_perception || 10,
+        proficiency_bonus: req.character_data.proficiency_bonus || 2,
+        alignment: req.character_data.alignment || 'TN',
+        exp: req.character_data.exp || 0,
       };
 
       const { data: newChar, error: charErr } = await supabase
@@ -151,12 +158,16 @@ export default function DMDashboard() {
 
       // Adicionar char_class
       if (cla_id) {
-        await supabase.from('char_class').insert([{
+        const { error: classErr } = await supabase.from('char_class').insert([{
            sheet_id: newChar.id,
            class_id: cla_id,
            subclass_id: req.character_data.subclass_id || null,
            level: 1
         }]);
+        if (classErr) {
+          console.error("Erro ao adicionar char_class:", classErr);
+          alert("Aviso: Falha ao adicionar classe ao personagem: " + classErr.message);
+        }
       }
 
       // Adicionar proficiências
