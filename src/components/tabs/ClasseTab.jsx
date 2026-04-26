@@ -40,7 +40,7 @@ const RULE_KEY_LABELS = {
   ki_points: 'Pontos de Ki',
   martial_arts_die: 'Artes Marciais',
   unarmored_movement_bonus_ft: 'Movimento sem Armadura',
-  lay_on_hands_pool: 'Cura por Imposição',
+  lay_on_hands_pool: 'Cura pelas Mãos',
   sneak_attack_dice_d6: 'Ataque Furtivo',
   sorcery_points: 'Pontos de Feitiçaria',
   metamagic_known: 'Metamagia',
