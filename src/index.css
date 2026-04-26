@@ -22,9 +22,9 @@
   --color-surface: #131315;
   --color-on-surface: #e5e1e4;
   --color-surface-variant: #353437;
-  --color-on-surface-variant: #e4beba;
-  --color-outline: #ab8986;
-  --color-outline-variant: #5b403e;
+  --color-on-surface-variant: #c9c5c8;
+  --color-outline: #6e6a6e;
+  --color-outline-variant: #2e2c2f;
   --color-inverse-surface: #e5e1e4;
   --color-inverse-on-surface: #313032;
   --color-inverse-primary: #b91a24;
@@ -57,6 +57,13 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1rem;
   }
+}
+
+/* Sobrescreve dinamicamente as cores de texto secundário com base no --sheet-accent do tema */
+:root {
+  --color-on-surface-variant: color-mix(in srgb, var(--sheet-accent, #c9c5c8) 22%, #a6a3a7);
+  --color-outline: color-mix(in srgb, var(--sheet-accent, #6e6a6e) 28%, #4a484b);
+  --color-outline-variant: color-mix(in srgb, var(--sheet-accent, #2e2c2f) 14%, #2a282b);
 }
 
 @utility no-scrollbar {

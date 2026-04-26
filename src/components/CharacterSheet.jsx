@@ -4,6 +4,7 @@ import { getCharacterProfile, updateAvatar, uploadAvatarFile, supabase } from '.
 import { DEFAULT_SHEET_ACCENT, getSheetAccentFromUser } from '../lib/sheetTheme';
 import { Loader2, ArrowLeft, Image as ImageIcon, Trash2, Check, X, User } from 'lucide-react';
 import StatsTab from './tabs/StatsTab';
+import ClasseTab from './tabs/ClasseTab';
 import InventarioTab from './tabs/InventarioTab';
 import MagiasTab from './tabs/MagiasTab';
 import PersonaTab from './tabs/PersonaTab';
@@ -120,6 +121,7 @@ export default function CharacterSheet() {
 
   const tabs = [
     { id: 'status', label: 'STATUS', icon: 'analytics' },
+    { id: 'classe', label: 'CLASSE', icon: 'account_tree' },
     { id: 'persona', label: 'PERSONA', icon: 'person' },
     { id: 'inventario', label: 'INVENTÁRIO', icon: 'inventory_2' },
     { id: 'magias', label: 'GRIMÓRIO', icon: 'auto_stories' },
@@ -236,6 +238,7 @@ export default function CharacterSheet() {
       {/* Main Content */}
       <main className="mt-16 pb-20 md:pb-8 md:pl-64 p-4 md:p-8 max-w-7xl mx-auto w-full">
         {activeTab === 'status' && <StatsTab character={character} />}
+        {activeTab === 'classe' && <ClasseTab character={character} />}
         {activeTab === 'persona' && <PersonaTab character={character} />}
         {activeTab === 'inventario' && <InventarioTab character={character} />}
         {activeTab === 'magias' && <MagiasTab character={character} />}

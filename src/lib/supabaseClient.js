@@ -54,7 +54,7 @@ export async function getCharacterProfile(charSheetId) {
         *,
         race(name, name_pt),
         sub_race(name, name_pt),
-        char_class(level, classes(name, name_pt)),
+        char_class(level, class_id, subclass_id, classes(id, name, name_pt, subclass_level), subclasses(id, class_id, name, name_pt, description)),
         char_proficiencies(skill_id, especialization),
         background(name, name_pt)
       `)
@@ -67,9 +67,11 @@ export async function getCharacterProfile(charSheetId) {
     }
 
     // Adaptando o char_class
-    const cls = charData.char_class?.[0]?.classes;
+    const charClassEntry = charData.char_class?.[0] || null;
+    const cls = charClassEntry?.classes;
     const charClassDetails =
       cls ? (cls.name_pt || cls.name || 'Sem classe') : 'Sem classe';
+    const currentSubclass = charClassEntry?.subclasses || null;
 
     const level = charData.level || 1;
     const profBonus = charData.proficiency_bonus || 2;
@@ -115,6 +117,92 @@ export async function getCharacterProfile(charSheetId) {
       };
     });
 
+    const classId = charClassEntry?.class_id || null;
+    const subclassId = charClassEntry?.subclass_id || null;
+
+    const normalizeFeature = (feature, source, relatedSubclass = null) => {
+      const numericKeys = [
+        'level',
+        'level_required',
+        'required_level',
+        'unlock_level',
+        'feature_level',
+        'class_level',
+        'character_level',
+        'level_requirement',
+        'min_level',
+        'obtained_level',
+        'available_level',
+        'level_req',
+        'lvl',
+        'tier',
+        'rank',
+      ];
+
+      const textKeys = [
+        'description',
+        'summary',
+        'details',
+        'detail',
+        'text',
+        'body',
+        'content',
+        'effect',
+        'effects',
+        'notes',
+        'feature_text',
+      ];
+
+      const coerceNumber = (value) => {
+        if (typeof value === 'number' && Number.isFinite(value)) return value;
+        if (typeof value === 'string') {
+          const parsed = Number.parseInt(value, 10);
+          if (Number.isFinite(parsed)) return parsed;
+        }
+        return null;
+      };
+
+      const featureLevel = numericKeys
+        .map((key) => coerceNumber(feature?.[key]))
+        .find((value) => value !== null);
+
+      const description = textKeys
+        .map((key) => feature?.[key])
+        .find((value) => typeof value === 'string' && value.trim());
+
+      return {
+        id: `${source}-${feature.id ?? feature.name_pt ?? feature.name ?? Math.random()}`,
+        name: feature?.name_pt || feature?.name || 'Caracteristica sem nome',
+        description: description || '',
+        level: featureLevel,
+        source,
+        subclassId: relatedSubclass?.id || null,
+        subclassName: relatedSubclass?.name_pt || relatedSubclass?.name || null,
+      };
+    };
+
+    const [classFeaturesRes, subclassesRes] = await Promise.all([
+      classId
+        ? supabase.from('class_features').select('*').eq('class_id', classId)
+        : Promise.resolve({ data: [], error: null }),
+      classId
+        ? supabase.from('subclasses').select('*').eq('class_id', classId).order('name_pt', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    const availableSubclasses = subclassesRes?.data || [];
+    const subclassIds = availableSubclasses.map((subclass) => subclass.id).filter(Boolean);
+
+    const { data: subclassFeaturesRaw } = subclassIds.length > 0
+      ? await supabase.from('subclass_features').select('*').in('subclass_id', subclassIds)
+      : { data: [] };
+
+    const subclassLookup = new Map(availableSubclasses.map((subclass) => [subclass.id, subclass]));
+    const classFeatures = (classFeaturesRes?.data || []).map((feature) => normalizeFeature(feature, 'class'));
+    const subclassFeatures = (subclassFeaturesRaw || []).map((feature) =>
+      normalizeFeature(feature, 'subclass', subclassLookup.get(feature.subclass_id))
+    );
+
     const characterInfo = {
       id: charData.id,
       name: charData.name || 'Sem Nome',
@@ -153,6 +241,24 @@ export async function getCharacterProfile(charSheetId) {
         spellSaveDC: 0,
         spellAttackBonus: 0,
         spells: []
+      },
+      classProgression: {
+        classId,
+        className: charClassDetails,
+        classLevel: charClassEntry?.level || level,
+        subclassId,
+        subclassName: currentSubclass?.name_pt || currentSubclass?.name || '',
+        subclassDescription: currentSubclass?.description || '',
+        subclassUnlockLevel: cls?.subclass_level || null,
+        currentLevel: level,
+        classFeatures,
+        subclasses: availableSubclasses.map((subclass) => ({
+          id: subclass.id,
+          name: subclass.name_pt || subclass.name || 'Subclasse',
+          description: subclass.description || '',
+          isSelected: subclass.id === subclassId,
+          features: subclassFeatures.filter((feature) => feature.subclassId === subclass.id),
+        })),
       }
     };
 

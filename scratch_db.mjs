@@ -5,16 +5,22 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function test() {
-  const getCols = async (table) => {
-    const res = await supabase.from(table).select('*').limit(1);
-    if (res.data && res.data.length > 0) return Object.keys(res.data[0]);
-    return res.data ? "Empty table" : res.error;
+  const getCount = async (tableName) => {
+    const { count, error } = await supabase
+      .from(tableName)
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      console.error(`Error counting ${tableName}:`, error.message);
+    } else {
+      console.log(`Count of ${tableName}:`, count);
+    }
   };
-  
-  console.log("classes:", await getCols('classes'));
-  console.log("race:", await getCols('race'));
-  console.log("sub_race:", await getCols('sub_race'));
-  console.log("background_proficiencies:", await getCols('background_proficiencies'));
+
+  await getCount('class_features');
+  await getCount('subclass_features');
+  await getCount('char_class');
+  await getCount('classes');
 }
 
 test();
