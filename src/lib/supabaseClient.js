@@ -193,9 +193,25 @@ export async function getCharacterProfile(charSheetId) {
     const availableSubclasses = subclassesRes?.data || [];
     const subclassIds = availableSubclasses.map((subclass) => subclass.id).filter(Boolean);
 
-    const { data: subclassFeaturesRaw } = subclassIds.length > 0
-      ? await supabase.from('subclass_features').select('*').in('subclass_id', subclassIds)
-      : { data: [] };
+    const [subclassFeaturesResult, subclassOptionsResult, choiceRulesResult, charChoicesResult] = await Promise.all([
+      subclassIds.length > 0
+        ? supabase.from('subclass_features').select('*').in('subclass_id', subclassIds)
+        : Promise.resolve({ data: [] }),
+      subclassId
+        ? supabase.from('subclass_options').select('*').eq('subclass_id', subclassId).order('name_pt')
+        : Promise.resolve({ data: [] }),
+      subclassId
+        ? supabase.from('subclass_choice_rules').select('*').eq('subclass_id', subclassId).order('level_required')
+        : Promise.resolve({ data: [] }),
+      subclassId
+        ? supabase.from('char_subclass_choices').select('*, subclass_options(*)').eq('sheet_id', charSheetId).eq('subclass_id', subclassId)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const subclassFeaturesRaw = subclassFeaturesResult?.data || [];
+    const subclassOptions = subclassOptionsResult?.data || [];
+    const choiceRules = choiceRulesResult?.data || [];
+    const charChoices = charChoicesResult?.data || [];
 
     const subclassLookup = new Map(availableSubclasses.map((subclass) => [subclass.id, subclass]));
     const classFeatures = (classFeaturesRes?.data || []).map((feature) => normalizeFeature(feature, 'class'));
@@ -259,6 +275,9 @@ export async function getCharacterProfile(charSheetId) {
           isSelected: subclass.id === subclassId,
           features: subclassFeatures.filter((feature) => feature.subclassId === subclass.id),
         })),
+        subclassOptions,
+        choiceRules,
+        charChoices,
       }
     };
 
