@@ -56,7 +56,8 @@ export async function getCharacterProfile(charSheetId) {
         sub_race(name, name_pt),
         char_class(level, class_id, subclass_id, classes(id, name, name_pt, subclass_level), subclasses(id, class_id, name, name_pt, description)),
         char_proficiencies(skill_id, especialization),
-        background(name, name_pt)
+        background(name, name_pt),
+        group_members(adventure_groups(name))
       `)
       .eq('id', charSheetId)
       .maybeSingle();
@@ -225,6 +226,7 @@ export async function getCharacterProfile(charSheetId) {
       race: charData.race?.name_pt || charData.race?.name || 'Desconhecida',
       sub_race: charData.sub_race?.name_pt || charData.sub_race?.name || '',
       class: charClassDetails,
+      groupName: charData.group_members?.[0]?.adventure_groups?.name || null,
       level: level,
       alignment: charData.alignment || 'Neutro',
       background: charData.background?.name_pt || charData.background?.name || 'Desconhecido',
@@ -1366,6 +1368,454 @@ export async function autoPopulateClassSpells(sheetId, classId, maxSpellLevel) {
     return { success: true };
   } catch (err) {
     console.error('[autoPopulate] Erro Fatal:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// =====================================================================
+// CAMPANHAS & ARCOS
+// =====================================================================
+
+export async function getCampaigns() {
+  try {
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createCampaign(title, description = '') {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: null, error: 'Não autenticado' };
+    const { data, error } = await supabase
+      .from('campaigns')
+      .insert([{ title, description, created_by: session.user.id }])
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getArcs(campaignId) {
+  try {
+    const { data, error } = await supabase
+      .from('arcs')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('order_index', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createArc(campaignId, title, description = '') {
+  try {
+    // Pegar próximo order_index
+    const { data: existing } = await supabase
+      .from('arcs')
+      .select('order_index')
+      .eq('campaign_id', campaignId)
+      .order('order_index', { ascending: false })
+      .limit(1);
+    const nextOrder = (existing?.[0]?.order_index || 0) + 1;
+
+    const { data, error } = await supabase
+      .from('arcs')
+      .insert([{ campaign_id: campaignId, title, description, order_index: nextOrder }])
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+// =====================================================================
+// GRUPOS DE AVENTURA
+// =====================================================================
+
+export async function getGroups() {
+  try {
+    const { data, error } = await supabase
+      .from('adventure_groups')
+      .select('*, campaigns(id, title), group_members(id, sheet_id, char_sheet(id, name, avatar_url, level))')
+      .order('created_at', { ascending: false });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createGroup(name, campaignId = null, description = '') {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: null, error: 'Não autenticado' };
+    const { data, error } = await supabase
+      .from('adventure_groups')
+      .insert([{ name, campaign_id: campaignId || null, description, created_by: session.user.id }])
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function addGroupMember(groupId, sheetId) {
+  try {
+    const { data, error } = await supabase
+      .from('group_members')
+      .insert([{ group_id: groupId, sheet_id: sheetId }])
+      .select()
+      .single();
+    if (error && error.code === '23505') return { data: null, error: 'Personagem já está no grupo.' };
+    if (error) return { data: null, error };
+
+    // Notificar o dono do personagem
+    const [sheetRes, groupRes] = await Promise.all([
+      supabase.from('char_sheet').select('owner_id, name').eq('id', sheetId).single(),
+      supabase.from('adventure_groups').select('name').eq('id', groupId).single()
+    ]);
+
+    if (sheetRes.data?.owner_id && groupRes.data?.name) {
+      await supabase.from('notifications').insert([{
+        user_id: sheetRes.data.owner_id,
+        type: 'group_added',
+        title: '👥 Novo Grupo de Aventura',
+        message: `Seu personagem ${sheetRes.data.name} foi adicionado ao grupo "${groupRes.data.name}".`,
+        metadata: { group_id: groupId, sheet_id: sheetId }
+      }]);
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function removeGroupMember(groupId, sheetId) {
+  try {
+    const { error } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('sheet_id', sheetId);
+    return { success: !error, error };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getAllCharacterSheets() {
+  try {
+    const { data, error } = await supabase
+      .from('char_sheet')
+      .select('id, name, avatar_url, level, owner_id, char_class(classes(name_pt))')
+      .order('name', { ascending: true });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+// =====================================================================
+// SESSÕES DE JOGO
+// =====================================================================
+
+export async function getActiveSession() {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*, adventure_groups(id, name), campaigns(id, title), arcs(id, title), session_participants(id, sheet_id, char_sheet(id, name, avatar_url))')
+      .eq('status', 'active')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function startSession(groupId, campaignId = null, arcId = null) {
+  try {
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    if (!authSession) return { data: null, error: 'Não autenticado' };
+
+    // Calcular session_number (próxima da campanha ou global)
+    let nextNumber = 1;
+    const query = supabase.from('sessions').select('session_number').order('session_number', { ascending: false }).limit(1);
+    if (campaignId) query.eq('campaign_id', campaignId);
+    const { data: lastSession } = await query;
+    if (lastSession?.[0]) nextNumber = lastSession[0].session_number + 1;
+
+    // Criar sessão
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([{
+        group_id: groupId,
+        campaign_id: campaignId || null,
+        arc_id: arcId || null,
+        status: 'active',
+        session_number: nextNumber,
+        started_by: authSession.user.id,
+      }])
+      .select()
+      .single();
+
+    if (error) return { data: null, error };
+
+    // Auto-adicionar membros do grupo como participantes
+    if (groupId) {
+      const { data: members } = await supabase
+        .from('group_members')
+        .select('sheet_id')
+        .eq('group_id', groupId);
+
+      if (members && members.length > 0) {
+        const participantRows = members.map(m => ({
+          session_id: data.id,
+          sheet_id: m.sheet_id,
+        }));
+        await supabase.from('session_participants').insert(participantRows);
+      }
+
+      // Notificar membros do grupo
+      const { data: memberSheets } = await supabase
+        .from('group_members')
+        .select('char_sheet(owner_id)')
+        .eq('group_id', groupId);
+
+      if (memberSheets) {
+        const ownerIds = [...new Set(memberSheets.map(m => m.char_sheet?.owner_id).filter(Boolean))];
+        // Não notificar o próprio DM
+        const notifRows = ownerIds
+          .filter(uid => uid !== authSession.user.id)
+          .map(uid => ({
+            user_id: uid,
+            type: 'session_started',
+            title: '🎲 Sessão Iniciada!',
+            message: `A sessão ${nextNumber} começou! O Mestre está chamando a mesa.`,
+            metadata: { session_id: data.id, session_number: nextNumber },
+          }));
+        if (notifRows.length > 0) {
+          await supabase.from('notifications').insert(notifRows);
+        }
+      }
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function endSession(sessionId, title) {
+  try {
+    // Buscar sessão para calcular duração
+    const { data: sessionData } = await supabase
+      .from('sessions')
+      .select('started_at, group_id, session_number, campaign_id')
+      .eq('id', sessionId)
+      .single();
+
+    const startedAt = new Date(sessionData.started_at);
+    const endedAt = new Date();
+    const durationMinutes = Math.round((endedAt - startedAt) / 60000);
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({
+        title,
+        status: 'completed',
+        ended_at: endedAt.toISOString(),
+        duration_minutes: durationMinutes,
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error };
+
+    // Notificar participantes do encerramento
+    if (sessionData.group_id) {
+      const { data: memberSheets } = await supabase
+        .from('group_members')
+        .select('char_sheet(owner_id)')
+        .eq('group_id', sessionData.group_id);
+
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+
+      if (memberSheets) {
+        const ownerIds = [...new Set(memberSheets.map(m => m.char_sheet?.owner_id).filter(Boolean))];
+        const notifRows = ownerIds
+          .filter(uid => uid !== authSession?.user?.id)
+          .map(uid => ({
+            user_id: uid,
+            type: 'session_ended',
+            title: '📜 Sessão Encerrada',
+            message: `Sessão ${sessionData.session_number}: "${title}" — Duração: ${Math.floor(durationMinutes / 60)}h${String(durationMinutes % 60).padStart(2, '0')}min`,
+            metadata: { session_id: sessionId, title, duration_minutes: durationMinutes },
+          }));
+        if (notifRows.length > 0) {
+          await supabase.from('notifications').insert(notifRows);
+        }
+      }
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getSessionHistory(campaignId = null, limit = 20) {
+  try {
+    let query = supabase
+      .from('sessions')
+      .select('*, adventure_groups(id, name), campaigns(id, title), arcs(id, title), session_participants(id, sheet_id, char_sheet(id, name, avatar_url))')
+      .eq('status', 'completed')
+      .order('ended_at', { ascending: false })
+      .limit(limit);
+
+    if (campaignId) query = query.eq('campaign_id', campaignId);
+
+    const { data, error } = await query;
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+// =====================================================================
+// LOG / DIÁRIO DO PERSONAGEM
+// =====================================================================
+
+export async function getCharLogEntries(sheetId) {
+  try {
+    const { data, error } = await supabase
+      .from('char_log_entries')
+      .select('*, sessions(id, title, session_number, started_at, campaigns(title))')
+      .eq('sheet_id', sheetId)
+      .order('created_at', { ascending: false });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createLogEntry(sheetId, content, sessionId = null) {
+  try {
+    const { data, error } = await supabase
+      .from('char_log_entries')
+      .insert([{ sheet_id: sheetId, content, session_id: sessionId || null }])
+      .select('*, sessions(id, title, session_number, started_at, campaigns(title))')
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function updateLogEntry(entryId, content) {
+  try {
+    const { data, error } = await supabase
+      .from('char_log_entries')
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq('id', entryId)
+      .select('*, sessions(id, title, session_number, started_at, campaigns(title))')
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function deleteLogEntry(entryId) {
+  try {
+    const { error } = await supabase
+      .from('char_log_entries')
+      .delete()
+      .eq('id', entryId);
+    return { success: !error, error };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// =====================================================================
+// NOTIFICAÇÕES
+// =====================================================================
+
+export async function getUnreadNotifications() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: [], count: 0 };
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    return { data: data || [], count: data?.length || 0, error };
+  } catch (err) {
+    return { data: [], count: 0, error: err.message };
+  }
+}
+
+export async function getAllNotifications(limit = 50) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: [] };
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function markNotificationRead(notifId) {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notifId);
+    return { success: !error, error };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function markAllNotificationsRead() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { success: false };
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', session.user.id)
+      .eq('is_read', false);
+    return { success: !error, error };
+  } catch (err) {
     return { success: false, error: err.message };
   }
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   supabase,
@@ -10,8 +10,20 @@ import {
   approveFullCreation,
   updateFullRequestStatus,
   isCurrentUserDM,
+  getCampaigns,
+  getArcs,
+  createArc,
+  getGroups,
+  createGroup,
+  addGroupMember,
+  removeGroupMember,
+  getAllCharacterSheets,
+  getActiveSession,
+  startSession,
+  endSession,
+  getSessionHistory,
 } from '../lib/supabaseClient';
-import { Loader2, Shield, Check, X, User, UserPlus, ScrollText } from 'lucide-react';
+import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2 } from 'lucide-react';
 
 const ATTR_BR = {
   str: { label: 'FOR', color: 'text-emerald-400' },
@@ -45,7 +57,30 @@ export default function DMDashboard() {
   const [sendingRequest, setSendingRequest] = useState(false);
 
   // Active view tab
-  const [activeView, setActiveView] = useState('level1'); // 'level1' | 'full'
+  const [activeView, setActiveView] = useState('level1'); // 'level1' | 'full' | 'sessions' | 'groups'
+
+  // Sessions state
+  const [campaigns, setCampaigns] = useState([]);
+  const [arcs, setArcs] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [activeSessionData, setActiveSessionData] = useState(null);
+  const [sessionHistory, setSessionHistory] = useState([]);
+  const [selectedCampaign, setSelectedCampaign] = useState('');
+  const [selectedArc, setSelectedArc] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [endTitle, setEndTitle] = useState('');
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [sessionTimer, setSessionTimer] = useState('');
+  const timerRef = useRef(null);
+
+  // Groups state
+  const [allSheets, setAllSheets] = useState([]);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupCampaign, setNewGroupCampaign] = useState('');
+  const [showAddMemberModal, setShowAddMemberModal] = useState(null);
+  const [groupLoading, setGroupLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -58,8 +93,10 @@ export default function DMDashboard() {
       }
       setUser(session.user);
       await loadAllRequests();
+      await loadSessionsAndGroups();
     };
     init();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [navigate]);
 
   const loadAllRequests = async () => {
@@ -71,6 +108,108 @@ export default function DMDashboard() {
     setRequests(r1.data || []);
     setFullRequests(r2.data || []);
     setLoading(false);
+  };
+
+  const loadSessionsAndGroups = async () => {
+    const [campRes, grpRes, activeRes, histRes, sheetsRes] = await Promise.all([
+      getCampaigns(),
+      getGroups(),
+      getActiveSession(),
+      getSessionHistory(),
+      getAllCharacterSheets(),
+    ]);
+    setCampaigns(campRes.data || []);
+    setGroups(grpRes.data || []);
+    setActiveSessionData(activeRes.data || null);
+    setSessionHistory(histRes.data || []);
+    setAllSheets(sheetsRes.data || []);
+
+    // Se tem campanha, carregar arcos da primeira
+    if (campRes.data?.length > 0) {
+      const arcRes = await getArcs(campRes.data[0].id);
+      setArcs(arcRes.data || []);
+    }
+
+    // Timer da sessão ativa
+    if (activeRes.data) {
+      startTimer(activeRes.data.started_at);
+    }
+  };
+
+  const startTimer = (startedAt) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const update = () => {
+      const diff = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+      setSessionTimer(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+    };
+    update();
+    timerRef.current = setInterval(update, 1000);
+  };
+
+  // --- Session handlers ---
+  const handleStartSession = async () => {
+    if (!selectedGroup) { alert('Selecione um grupo.'); return; }
+    setSessionLoading(true);
+    const { data, error } = await startSession(selectedGroup, selectedCampaign || null, selectedArc || null);
+    if (error) { alert('Erro: ' + (error.message || error)); }
+    else { setActiveSessionData(data); startTimer(data.started_at); }
+    await loadSessionsAndGroups();
+    setSessionLoading(false);
+  };
+
+  const handleEndSession = async () => {
+    if (!endTitle.trim()) { alert('Dê um título para a sessão.'); return; }
+    setSessionLoading(true);
+    const { error } = await endSession(activeSessionData.id, endTitle.trim());
+    if (error) { alert('Erro: ' + (error.message || error)); }
+    else {
+      setActiveSessionData(null);
+      setEndTitle('');
+      setShowEndModal(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+      setSessionTimer('');
+    }
+    await loadSessionsAndGroups();
+    setSessionLoading(false);
+  };
+
+  const handleCampaignChange = async (campId) => {
+    setSelectedCampaign(campId);
+    setSelectedArc('');
+    if (campId) {
+      const res = await getArcs(campId);
+      setArcs(res.data || []);
+    } else { setArcs([]); }
+  };
+
+  // --- Group handlers ---
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) return;
+    setGroupLoading(true);
+    const { error } = await createGroup(newGroupName.trim(), newGroupCampaign || null);
+    if (error) alert('Erro: ' + (error.message || error));
+    else { setShowGroupModal(false); setNewGroupName(''); setNewGroupCampaign(''); }
+    await loadSessionsAndGroups();
+    setGroupLoading(false);
+  };
+
+  const handleAddMember = async (groupId, sheetId) => {
+    setGroupLoading(true);
+    const { error } = await addGroupMember(groupId, sheetId);
+    if (error) alert(typeof error === 'string' ? error : error.message);
+    await loadSessionsAndGroups();
+    setGroupLoading(false);
+  };
+
+  const handleRemoveMember = async (groupId, sheetId) => {
+    if (!window.confirm('Remover este membro do grupo?')) return;
+    setGroupLoading(true);
+    await removeGroupMember(groupId, sheetId);
+    await loadSessionsAndGroups();
+    setGroupLoading(false);
   };
 
   // --- Level 1 handlers (existing) ---
@@ -307,8 +446,32 @@ export default function DMDashboard() {
             <ScrollText className="w-4 h-4" />
             Fichas Completas ({fullRequests.length})
           </button>
+          <button
+            onClick={() => { setActiveView('sessions'); setSelectedReq(null); setSelectedFullReq(null); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+              activeView === 'sessions'
+                ? 'bg-amber-900/30 border-amber-700 text-amber-400'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600'
+            }`}
+          >
+            <Play className="w-4 h-4" />
+            Sessões {activeSessionData ? '🟢' : ''}
+          </button>
+          <button
+            onClick={() => { setActiveView('groups'); setSelectedReq(null); setSelectedFullReq(null); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+              activeView === 'groups'
+                ? 'bg-cyan-900/30 border-cyan-700 text-cyan-400'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Grupos ({groups.length})
+          </button>
         </div>
 
+        {/* ═══ REQUESTS PANELS (level1 / full) ═══ */}
+        {(activeView === 'level1' || activeView === 'full') && (
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* ═══ LEFT PANEL: Request List ═══ */}
@@ -619,9 +782,239 @@ export default function DMDashboard() {
             )}
           </div>
         </div>
+        )}
+
+        {/* ═══ SESSIONS PANEL ═══ */}
+        {activeView === 'sessions' && (
+          <div className="space-y-6">
+            {/* Sessão Ativa */}
+            {activeSessionData ? (
+              <div className="bg-gradient-to-r from-amber-900/20 to-neutral-900/60 border border-amber-700/40 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)] animate-pulse"></span>
+                    <h3 className="text-xl font-bold text-white">Sessão {activeSessionData.session_number} — Em Andamento</h3>
+                  </div>
+                  <span className="font-mono text-2xl font-bold text-amber-400">{sessionTimer}</span>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm text-neutral-400 mb-4">
+                  {activeSessionData.adventure_groups?.name && <span>🎭 {activeSessionData.adventure_groups.name}</span>}
+                  {activeSessionData.campaigns?.title && <span>📖 {activeSessionData.campaigns.title}</span>}
+                  {activeSessionData.arcs?.title && <span>🌀 {activeSessionData.arcs.title}</span>}
+                </div>
+                {activeSessionData.session_participants?.length > 0 && (
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    {activeSessionData.session_participants.map(p => (
+                      <div key={p.id} className="flex items-center gap-2 bg-neutral-900/60 border border-neutral-700 rounded-lg px-3 py-1.5">
+                        <div className="w-6 h-6 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center">
+                          {p.char_sheet?.avatar_url ? <img src={p.char_sheet.avatar_url} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-neutral-500" />}
+                        </div>
+                        <span className="text-xs text-white font-medium">{p.char_sheet?.name || '???'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowEndModal(true)}
+                  disabled={sessionLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                >
+                  <Square className="w-4 h-4" />
+                  Encerrar Sessão
+                </button>
+              </div>
+            ) : (
+              <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Play className="w-5 h-5 text-amber-400" /> Iniciar Nova Sessão</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1.5">Grupo *</label>
+                    <select value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+                      <option value="">Selecione...</option>
+                      {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1.5">Campanha</label>
+                    <select value={selectedCampaign} onChange={e => handleCampaignChange(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+                      <option value="">Nenhuma</option>
+                      {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1.5">Arco</label>
+                    <select value={selectedArc} onChange={e => setSelectedArc(e.target.value)} disabled={!selectedCampaign} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-40">
+                      <option value="">Nenhum</option>
+                      {arcs.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button onClick={handleStartSession} disabled={sessionLoading || !selectedGroup} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50">
+                  {sessionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  Iniciar Sessão
+                </button>
+              </div>
+            )}
+
+            {/* Histórico */}
+            <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-neutral-400" /> Histórico de Sessões</h3>
+              {sessionHistory.length === 0 ? (
+                <p className="text-neutral-500 text-center py-6">Nenhuma sessão registrada ainda.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sessionHistory.map(s => (
+                    <div key={s.id} className="bg-neutral-950 border border-neutral-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-400 font-bold text-sm">Sessão {s.session_number}</span>
+                          {s.title && <span className="text-white font-medium text-sm">— {s.title}</span>}
+                        </div>
+                        <div className="flex flex-wrap gap-3 mt-1 text-xs text-neutral-500">
+                          <span>{new Date(s.started_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                          {s.duration_minutes != null && <span>⏱ {Math.floor(s.duration_minutes / 60)}h{String(s.duration_minutes % 60).padStart(2, '0')}min</span>}
+                          {s.adventure_groups?.name && <span>🎭 {s.adventure_groups.name}</span>}
+                          {s.campaigns?.title && <span>📖 {s.campaigns.title}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        {s.session_participants?.map(p => (
+                          <div key={p.id} className="w-7 h-7 rounded-full bg-neutral-800 overflow-hidden border border-neutral-700 flex items-center justify-center" title={p.char_sheet?.name}>
+                            {p.char_sheet?.avatar_url ? <img src={p.char_sheet.avatar_url} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-neutral-500" />}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ GROUPS PANEL ═══ */}
+        {activeView === 'groups' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" /> Grupos de Aventura</h3>
+              <button onClick={() => setShowGroupModal(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors">
+                <Plus className="w-4 h-4" /> Novo Grupo
+              </button>
+            </div>
+            {groups.length === 0 ? (
+              <div className="text-center py-12 bg-neutral-900/40 border border-neutral-800 rounded-2xl text-neutral-500">
+                <Users className="w-12 h-12 mx-auto opacity-20 mb-3" />
+                <p>Nenhum grupo criado ainda.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {groups.map(g => (
+                  <div key={g.id} className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-white text-lg">{g.name}</h4>
+                      {g.campaigns?.title && <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/40 px-2 py-0.5 rounded-full">{g.campaigns.title}</span>}
+                    </div>
+                    <div className="space-y-2 mb-3">
+                      {g.group_members?.map(m => (
+                        <div key={m.id} className="flex items-center justify-between bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center">
+                              {m.char_sheet?.avatar_url ? <img src={m.char_sheet.avatar_url} alt="" className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-neutral-500" />}
+                            </div>
+                            <span className="text-sm text-white font-medium">{m.char_sheet?.name || '???'}</span>
+                            <span className="text-xs text-neutral-500">Lvl {m.char_sheet?.level || '?'}</span>
+                          </div>
+                          <button onClick={() => handleRemoveMember(g.id, m.sheet_id)} className="text-red-400/50 hover:text-red-400 transition-colors" title="Remover">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => setShowAddMemberModal(g.id)} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+                      <Plus className="w-3.5 h-3.5" /> Adicionar Membro
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* ═══ USER SELECTION MODAL ═══ */}
+      {/* ═══ END SESSION MODAL ═══ */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Square className="w-5 h-5 text-red-400" /> Encerrar Sessão</h3>
+            <p className="text-sm text-neutral-400 mb-4">Dê um título para esta sessão (os jogadores verão este título no diário).</p>
+            <input type="text" value={endTitle} onChange={e => setEndTitle(e.target.value)} placeholder="Ex: A Caverna Sombria" className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 mb-4" autoFocus />
+            <div className="flex gap-3">
+              <button onClick={handleEndSession} disabled={sessionLoading || !endTitle.trim()} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50">
+                {sessionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Encerrar
+              </button>
+              <button onClick={() => setShowEndModal(false)} className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-colors">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CREATE GROUP MODAL ═══ */}
+      {showGroupModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" /> Novo Grupo</h3>
+            <div className="space-y-3 mb-4">
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Nome do Grupo *</label>
+                <input type="text" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Ex: Os Guardiões" className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" autoFocus />
+              </div>
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Campanha</label>
+                <select value={newGroupCampaign} onChange={e => setNewGroupCampaign(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50">
+                  <option value="">Nenhuma</option>
+                  {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleCreateGroup} disabled={groupLoading || !newGroupName.trim()} className="flex-1 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50">
+                {groupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Criar Grupo
+              </button>
+              <button onClick={() => setShowGroupModal(false)} className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-colors">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ ADD MEMBER MODAL ═══ */}
+      {showAddMemberModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2"><UserPlus className="w-5 h-5 text-cyan-400" /> Adicionar Membro</h3>
+              <button onClick={() => setShowAddMemberModal(null)} className="text-neutral-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 max-h-[400px]">
+              {allSheets.filter(s => {
+                const group = groups.find(g => g.id === showAddMemberModal);
+                const memberIds = group?.group_members?.map(m => m.sheet_id) || [];
+                return !memberIds.includes(s.id);
+              }).map(sheet => (
+                <button key={sheet.id} onClick={() => { handleAddMember(showAddMemberModal, sheet.id); setShowAddMemberModal(null); }} disabled={groupLoading}
+                  className="w-full text-left p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-cyan-500/50 hover:bg-cyan-900/10 transition-all flex items-center gap-3 disabled:opacity-50">
+                  <div className="w-8 h-8 rounded-full bg-neutral-800 overflow-hidden flex items-center justify-center">
+                    {sheet.avatar_url ? <img src={sheet.avatar_url} alt="" className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-neutral-500" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-white text-sm truncate">{sheet.name}</p>
+                    <p className="text-xs text-neutral-500">Lvl {sheet.level || '?'} • {sheet.char_class?.[0]?.classes?.name_pt || '???'}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showUserModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[80vh] flex flex-col">

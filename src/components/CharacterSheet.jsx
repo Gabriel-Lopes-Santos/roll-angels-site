@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacterProfile, updateAvatar, uploadAvatarFile, supabase } from '../lib/supabaseClient';
+import { getCharacterProfile, updateAvatar, uploadAvatarFile, supabase, getUnreadNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/supabaseClient';
 import { DEFAULT_SHEET_ACCENT, getSheetAccentFromUser } from '../lib/sheetTheme';
 import { Loader2, ArrowLeft, Image as ImageIcon, Trash2, Check, X, User } from 'lucide-react';
 import StatsTab from './tabs/StatsTab';
@@ -8,6 +8,7 @@ import ClasseTab from './tabs/ClasseTab';
 import InventarioTab from './tabs/InventarioTab';
 import MagiasTab from './tabs/MagiasTab';
 import PersonaTab from './tabs/PersonaTab';
+import LogTab from './tabs/LogTab';
 import SheetThemeSettingsModal from './SheetThemeSettingsModal';
 import SiteSettingsDropdown from './SiteSettingsDropdown';
 
@@ -30,6 +31,12 @@ export default function CharacterSheet() {
   const [isThemeSettingsOpen, setIsThemeSettingsOpen] = useState(false);
   const [isSiteSettingsOpen, setIsSiteSettingsOpen] = useState(false);
   const siteSettingsRef = useRef(null);
+
+  // Notificações
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -70,6 +77,48 @@ export default function CharacterSheet() {
       document.removeEventListener('keydown', onKey);
     };
   }, [isSiteSettingsOpen]);
+
+  // Fechar dropdown de notificações ao clicar fora
+  useEffect(() => {
+    if (!isNotifOpen) return undefined;
+    const close = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setIsNotifOpen(false);
+      }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setIsNotifOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isNotifOpen]);
+
+  // Carregar notificações
+  useEffect(() => {
+    async function loadNotifs() {
+      const { data, count } = await getUnreadNotifications();
+      setNotifications(data);
+      setUnreadCount(count);
+    }
+    loadNotifs();
+    // Poll a cada 30s
+    const interval = setInterval(loadNotifs, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  async function handleMarkRead(notifId) {
+    await markNotificationRead(notifId);
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  }
+
+  async function handleMarkAllRead() {
+    await markAllNotificationsRead();
+    setNotifications([]);
+    setUnreadCount(0);
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -169,12 +218,21 @@ export default function CharacterSheet() {
           </div>
           <div>
             <h1 className="font-['Space_Grotesk'] text-lg font-black tracking-tighter text-sheet-accent leading-none uppercase">{character.name}</h1>
-            <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase opacity-60 whitespace-nowrap">
+            <div className="flex gap-2 text-[10px] font-bold tracking-widest uppercase opacity-60 whitespace-nowrap items-center flex-wrap">
               <span>{character.class || 'SEM CLASSE'}</span>
               <span className="text-sheet-accent opacity-100">•</span>
               <span>{displayRace}</span>
               <span className="text-sheet-accent opacity-100">•</span>
               <span>Lvl {character.level || 1}</span>
+              {character.groupName && (
+                <>
+                  <span className="text-sheet-accent opacity-100">•</span>
+                  <span className="text-cyan-400 flex items-center gap-1" title="Grupo de Aventura">
+                    <span className="material-symbols-outlined text-[12px]">group</span>
+                    {character.groupName}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -186,9 +244,70 @@ export default function CharacterSheet() {
           </div>
 
           <div className="flex items-center gap-3 text-neutral-400">
-            <button type="button" className="hover:text-sheet-accent transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-            </button>
+            <div className="relative" ref={notifRef}>
+              <button
+                type="button"
+                onClick={() => setIsNotifOpen((o) => !o)}
+                className={`hover:text-sheet-accent transition-colors flex items-center justify-center relative rounded-full p-1 ${isNotifOpen ? 'text-sheet-accent bg-white/5' : ''}`}
+                title="Notificações"
+              >
+                <span className="material-symbols-outlined text-[20px]">notifications</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none shadow-lg">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {isNotifOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 max-h-[400px] overflow-y-auto bg-surface-container border border-white/10 rounded-xl shadow-2xl z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between p-3 border-b border-white/5">
+                    <h4 className="font-['Space_Grotesk'] text-xs font-bold tracking-widest uppercase text-sheet-accent">Notificações</h4>
+                    {notifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRead}
+                        className="text-[10px] font-bold tracking-wider text-on-surface-variant/50 hover:text-sheet-accent transition-colors uppercase"
+                      >
+                        Marcar todas
+                      </button>
+                    )}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-on-surface-variant/40 text-xs font-['Space_Grotesk'] tracking-wider">
+                      Nenhuma notificação nova
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="p-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors cursor-pointer group"
+                        onClick={() => handleMarkRead(n.id)}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-base leading-none mt-0.5">
+                            {n.type === 'session_started' ? '🎲' : n.type === 'session_ended' ? '📜' : n.type === 'group_added' ? '👥' : '🔔'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-on-surface truncate">{n.title}</p>
+                            <p className="text-[11px] text-on-surface-variant/60 mt-0.5 leading-snug">{n.message}</p>
+                            <span className="text-[9px] text-on-surface-variant/30 font-mono mt-1 block">
+                              {new Date(n.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-sheet-accent-subtle rounded transition-all"
+                            title="Marcar como lida"
+                          >
+                            <span className="material-symbols-outlined text-[14px] text-sheet-accent">check</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <div className="relative" ref={siteSettingsRef}>
               <button
                 type="button"
@@ -257,42 +376,7 @@ export default function CharacterSheet() {
           </div>
         )}
 
-        {activeTab === 'log' && (
-          <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-4">
-              <div>
-                <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-sheet-accent-weak uppercase">Mundo e Aventuras</p>
-                <h3 className="font-['Space_Grotesk'] text-3xl font-black">DIÁRIO DE JOGO</h3>
-              </div>
-            </div>
-
-            <div className="bg-surface-container p-6 rounded border border-outline-variant/10">
-              <textarea
-                className="w-full min-h-[150px] bg-surface-container-lowest text-on-surface p-4 rounded outline-none border border-white/5 focus:border-sheet-accent-soft transition-colors resize-y text-sm font-['Inter'] leading-relaxed placeholder-sheet-accent-faint"
-                placeholder="Insira notas, acontecimentos ou informações importantes da sessão..."
-              ></textarea>
-              <div className="flex justify-end mt-4">
-                <button
-                  type="button"
-                  className="bg-sheet-accent-subtle hover:bg-sheet-accent-muted text-sheet-accent border border-sheet-accent-soft px-6 py-2 rounded text-xs font-bold font-['Space_Grotesk'] tracking-widest uppercase transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[16px]">add</span>
-                  Adicionar Bloco
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-4">
-              <p className="text-xs font-bold text-sheet-accent-weak tracking-widest uppercase font-['Space_Grotesk']">Registros Anteriores</p>
-              <div className="bg-surface-container-highest p-6 rounded border-l-2 border-sheet-accent relative group">
-                <p className="text-sm text-on-surface-variant leading-relaxed">
-                  Espaço reservado para carregar os blocos do diário que foram salvos anteriormente.
-                </p>
-                <span className="absolute top-4 right-4 text-[10px] text-on-surface-variant/30 font-mono tracking-widest">HOJE</span>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === 'log' && <LogTab character={character} />}
       </main>
 
       {/* BottomNavBar (Mobile Only) */}
