@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getUserCharacters, signOut, getUserPendingRequest, getUserAwaitingFullRequests, isCurrentUserDM } from '../lib/supabaseClient';
-import { LogOut, User, Shield, Loader2, PlusCircle, Clock, ScrollText } from 'lucide-react';
+import { supabase, getUserCharacters, signOut, getUserPendingRequest, getUserAwaitingFullRequests, isCurrentUserDM, getActiveSession } from '../lib/supabaseClient';
+import { LogOut, User, Shield, Loader2, PlusCircle, Clock, ScrollText, Map } from 'lucide-react';
 
 export default function CharacterSelection() {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ export default function CharacterSelection() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isDM, setIsDM] = useState(false);
+  const [activeSession, setActiveSession] = useState(null);
 
   useEffect(() => {
     const checkAuthAndLoad = async () => {
@@ -32,11 +33,12 @@ export default function CharacterSelection() {
 
       setUser(session.user);
       
-      const [charsResult, requestResult, fullReqsResult, dmStatus] = await Promise.all([
+      const [charsResult, requestResult, fullReqsResult, dmStatus, sessionResult] = await Promise.all([
         getUserCharacters(session.user.id),
         getUserPendingRequest(session.user.id),
         getUserAwaitingFullRequests(session.user.id),
-        isCurrentUserDM()
+        isCurrentUserDM(),
+        getActiveSession(),
       ]);
 
       if (charsResult.data) {
@@ -46,6 +48,7 @@ export default function CharacterSelection() {
       setPendingRequest(requestResult.data);
       setFullCreationRequests(fullReqsResult.data || []);
       setIsDM(dmStatus);
+      setActiveSession(sessionResult.data || null);
 
       setLoading(false);
     };
@@ -129,6 +132,34 @@ export default function CharacterSelection() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+        {/* Active Session — VTT Banner */}
+        {activeSession && (
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-amber-900/20 to-neutral-900/60 border border-amber-600/30 rounded-2xl">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                  <Map className="w-6 h-6 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] animate-pulse"></span>
+                    Sessão {activeSession.session_number} em Andamento!
+                  </h3>
+                  <p className="text-neutral-400 text-sm mt-0.5">
+                    O Mestre está na mesa. Clique para entrar na Mesa Virtual.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate(`/vtt/${activeSession.id}`)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-900/30 text-sm whitespace-nowrap"
+              >
+                <Map className="w-4 h-4" />
+                Entrar na Mesa Virtual
+              </button>
+            </div>
           </div>
         )}
 

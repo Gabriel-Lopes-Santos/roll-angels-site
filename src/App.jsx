@@ -6,6 +6,7 @@ import CharacterCreationRequest from './pages/CharacterCreationRequest'
 import CharacterFullCreation from './pages/CharacterFullCreation'
 import DMDashboard from './pages/DMDashboard'
 import ResetPassword from './pages/ResetPassword'
+import VTTPage from './pages/VTTPage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/mestre" element={<DMDashboard />} />
         <Route path="/ficha/:id" element={<CharacterSheet />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/vtt/:sessionId" element={<VTTPage />} />
       </Routes>
     </Router>
   )

@@ -95,17 +95,35 @@ export default function CharacterSheet() {
     };
   }, [isNotifOpen]);
 
-  // Carregar notificações
+  // Carregar notificações e escutar em tempo real
   useEffect(() => {
-    async function loadNotifs() {
-      const { data, count } = await getUnreadNotifications();
-      setNotifications(data);
-      setUnreadCount(count);
+    let channel;
+
+    async function setupNotifs() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const loadNotifs = async () => {
+        const { data, count } = await getUnreadNotifications();
+        setNotifications(data);
+        setUnreadCount(count);
+      };
+
+      await loadNotifs();
+
+      // Escutar novos inserts na tabela notifications para este usuário
+      channel = supabase.channel('realtime:notifications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` }, (payload) => {
+          loadNotifs();
+        })
+        .subscribe();
     }
-    loadNotifs();
-    // Poll a cada 30s
-    const interval = setInterval(loadNotifs, 30000);
-    return () => clearInterval(interval);
+
+    setupNotifs();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   async function handleMarkRead(notifId) {

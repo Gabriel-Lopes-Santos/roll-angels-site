@@ -11,6 +11,7 @@ import {
   updateFullRequestStatus,
   isCurrentUserDM,
   getCampaigns,
+  createCampaign,
   getArcs,
   createArc,
   getGroups,
@@ -23,7 +24,7 @@ import {
   endSession,
   getSessionHistory,
 } from '../lib/supabaseClient';
-import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map } from 'lucide-react';
 
 const ATTR_BR = {
   str: { label: 'FOR', color: 'text-emerald-400' },
@@ -82,6 +83,16 @@ export default function DMDashboard() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(null);
   const [groupLoading, setGroupLoading] = useState(false);
 
+  // Campaigns & Arcs state
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showArcModal, setShowArcModal] = useState(false);
+  const [newCampaignTitle, setNewCampaignTitle] = useState('');
+  const [newCampaignDesc, setNewCampaignDesc] = useState('');
+  const [newArcTitle, setNewArcTitle] = useState('');
+  const [newArcDesc, setNewArcDesc] = useState('');
+  const [newArcCampaignId, setNewArcCampaignId] = useState('');
+  const [campaignLoading, setCampaignLoading] = useState(false);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -124,10 +135,10 @@ export default function DMDashboard() {
     setSessionHistory(histRes.data || []);
     setAllSheets(sheetsRes.data || []);
 
-    // Se tem campanha, carregar arcos da primeira
+    // Carregar arcos de todas as campanhas
     if (campRes.data?.length > 0) {
-      const arcRes = await getArcs(campRes.data[0].id);
-      setArcs(arcRes.data || []);
+      const allArcsRes = await Promise.all(campRes.data.map(c => getArcs(c.id)));
+      setArcs(allArcsRes.flatMap(res => res.data || []));
     }
 
     // Timer da sessão ativa
@@ -183,6 +194,27 @@ export default function DMDashboard() {
       const res = await getArcs(campId);
       setArcs(res.data || []);
     } else { setArcs([]); }
+  };
+
+  // --- Campaigns and Arcs handlers ---
+  const handleCreateCampaign = async () => {
+    if (!newCampaignTitle.trim()) return;
+    setCampaignLoading(true);
+    const { error } = await createCampaign(newCampaignTitle.trim(), newCampaignDesc.trim());
+    if (error) alert('Erro: ' + (error.message || error));
+    else { setShowCampaignModal(false); setNewCampaignTitle(''); setNewCampaignDesc(''); }
+    await loadSessionsAndGroups();
+    setCampaignLoading(false);
+  };
+
+  const handleCreateArc = async () => {
+    if (!newArcTitle.trim() || !newArcCampaignId) { alert('Título e Campanha são obrigatórios.'); return; }
+    setCampaignLoading(true);
+    const { error } = await createArc(newArcCampaignId, newArcTitle.trim(), newArcDesc.trim());
+    if (error) alert('Erro: ' + (error.message || error));
+    else { setShowArcModal(false); setNewArcTitle(''); setNewArcDesc(''); setNewArcCampaignId(''); }
+    await loadSessionsAndGroups();
+    setCampaignLoading(false);
   };
 
   // --- Group handlers ---
@@ -467,6 +499,17 @@ export default function DMDashboard() {
           >
             <Users className="w-4 h-4" />
             Grupos ({groups.length})
+          </button>
+          <button
+            onClick={() => { setActiveView('campaigns'); setSelectedReq(null); setSelectedFullReq(null); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+              activeView === 'campaigns'
+                ? 'bg-indigo-900/30 border-indigo-700 text-indigo-400'
+                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600'
+            }`}
+          >
+            <Book className="w-4 h-4" />
+            Campanhas ({campaigns.length})
           </button>
         </div>
 
@@ -814,14 +857,23 @@ export default function DMDashboard() {
                     ))}
                   </div>
                 )}
-                <button
-                  onClick={() => setShowEndModal(true)}
-                  disabled={sessionLoading}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
-                >
-                  <Square className="w-4 h-4" />
-                  Encerrar Sessão
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate(`/vtt/${activeSessionData.id}`)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-purple-900/30"
+                  >
+                    <Map className="w-4 h-4" />
+                    Abrir Mesa Virtual
+                  </button>
+                  <button
+                    onClick={() => setShowEndModal(true)}
+                    disabled={sessionLoading}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                  >
+                    <Square className="w-4 h-4" />
+                    Encerrar Sessão
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6">
@@ -889,6 +941,54 @@ export default function DMDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ═══ CAMPAIGNS PANEL ═══ */}
+        {activeView === 'campaigns' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Book className="w-5 h-5 text-indigo-400" /> Campanhas e Arcos</h3>
+              <div className="flex gap-2">
+                <button onClick={() => setShowArcModal(true)} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-sm font-medium transition-colors">
+                  <Plus className="w-4 h-4" /> Novo Arco
+                </button>
+                <button onClick={() => setShowCampaignModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+                  <Plus className="w-4 h-4" /> Nova Campanha
+                </button>
+              </div>
+            </div>
+            {campaigns.length === 0 ? (
+              <div className="text-center py-12 bg-neutral-900/40 border border-neutral-800 rounded-2xl text-neutral-500">
+                <Book className="w-12 h-12 mx-auto opacity-20 mb-3" />
+                <p>Nenhuma campanha criada ainda.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {campaigns.map(c => (
+                  <div key={c.id} className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-5">
+                    <h4 className="font-bold text-white text-lg">{c.title}</h4>
+                    {c.description && <p className="text-sm text-neutral-400 mt-1 mb-3">{c.description}</p>}
+                    
+                    <div className="mt-4">
+                      <h5 className="text-xs uppercase tracking-wider text-neutral-500 mb-2">Arcos</h5>
+                      {arcs.filter(a => a.campaign_id === c.id).length === 0 ? (
+                        <p className="text-xs text-neutral-500 italic">Nenhum arco vinculado.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {arcs.filter(a => a.campaign_id === c.id).map(a => (
+                            <div key={a.id} className="bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2">
+                              <span className="text-sm text-white font-medium block">{a.title}</span>
+                              {a.description && <span className="text-xs text-neutral-500 block truncate">{a.description}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1060,6 +1160,58 @@ export default function DMDashboard() {
                   </button>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CREATE CAMPAIGN MODAL ═══ */}
+      {showCampaignModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Book className="w-5 h-5 text-indigo-400" /> Nova Campanha</h3>
+            <div className="space-y-3 mb-4">
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Título *</label>
+                <input type="text" value={newCampaignTitle} onChange={e => setNewCampaignTitle(e.target.value)} placeholder="Ex: O Retorno dos Dragões" className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50" autoFocus />
+              </div>
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Descrição</label>
+                <textarea value={newCampaignDesc} onChange={e => setNewCampaignDesc(e.target.value)} placeholder="Opcional..." rows={3} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"></textarea>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleCreateCampaign} disabled={campaignLoading || !newCampaignTitle.trim()} className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50">
+                {campaignLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Criar Campanha
+              </button>
+              <button onClick={() => setShowCampaignModal(false)} className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-colors">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CREATE ARC MODAL ═══ */}
+      {showArcModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Map className="w-5 h-5 text-indigo-400" /> Novo Arco</h3>
+            <div className="space-y-3 mb-4">
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Campanha *</label>
+                <select value={newArcCampaignId} onChange={e => setNewArcCampaignId(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                  <option value="">Selecione uma campanha...</option>
+                  {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Título do Arco *</label>
+                <input type="text" value={newArcTitle} onChange={e => setNewArcTitle(e.target.value)} placeholder="Ex: O Culto Sombrio" className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+              </div>
+              <div><label className="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Descrição</label>
+                <textarea value={newArcDesc} onChange={e => setNewArcDesc(e.target.value)} placeholder="Opcional..." rows={3} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"></textarea>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleCreateArc} disabled={campaignLoading || !newArcTitle.trim() || !newArcCampaignId} className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50">
+                {campaignLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Criar Arco
+              </button>
+              <button onClick={() => setShowArcModal(false)} className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-colors">Cancelar</button>
             </div>
           </div>
         </div>
