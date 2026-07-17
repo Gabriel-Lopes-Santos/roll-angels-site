@@ -25,3 +25,17 @@ dist-ssr
 
 # Pastas de materiais de referência locais
 livros/
+
+# Scripts e arquivos auxiliares de banco/auditoria
+audit.md
+auditSpells.mjs
+build_seed.mjs
+build_seed_translated.mjs
+crosscheck_spells.mjs
+fix_subclasses.sql
+fix_subclasses2.sql
+generate_spells_audit.js
+run.sql
+seed_feats_translated.sql
+seed_features.sql
+setup_level_progression.sql
