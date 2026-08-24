@@ -25,6 +25,7 @@ import {
   getSessionHistory,
 } from '../lib/supabaseClient';
 import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map } from 'lucide-react';
+import PiNoKyoChat from '../components/PiNoKyoChat';
 
 const ATTR_BR = {
   str: { label: 'FOR', color: 'text-emerald-400' },
@@ -1216,6 +1217,7 @@ export default function DMDashboard() {
           </div>
         </div>
       )}
+      <PiNoKyoChat role="dm" />
     </div>
   );
 }

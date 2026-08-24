@@ -11,6 +11,8 @@ import PersonaTab from './tabs/PersonaTab';
 import LogTab from './tabs/LogTab';
 import SheetThemeSettingsModal from './SheetThemeSettingsModal';
 import SiteSettingsDropdown from './SiteSettingsDropdown';
+import LevelUpWizardModal from './LevelUpWizardModal';
+import { XP_THRESHOLDS, canLevelUp } from '../lib/levelProgression';
 
 export default function CharacterSheet() {
   const { id } = useParams();
@@ -20,6 +22,8 @@ export default function CharacterSheet() {
   const [activeTab, setActiveTab] = useState('status');
 
   const [errorMsg, setErrorMsg] = useState('');
+
+  const [isLevelUpModalOpen, setIsLevelUpModalOpen] = useState(false);
 
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -242,6 +246,14 @@ export default function CharacterSheet() {
               <span>{displayRace}</span>
               <span className="text-sheet-accent opacity-100">•</span>
               <span>Lvl {character.level || 1}</span>
+              {canLevelUp(character.exp || 0, character.level || 1) && (
+                <button 
+                  onClick={() => setIsLevelUpModalOpen(true)}
+                  className="ml-2 px-2 py-0.5 bg-amber-500 text-black rounded text-[9px] font-black hover:bg-amber-400 animate-pulse transition-all shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                >
+                  UP!
+                </button>
+              )}
               {character.groupName && (
                 <>
                   <span className="text-sheet-accent opacity-100">•</span>
@@ -495,9 +507,19 @@ export default function CharacterSheet() {
         open={isThemeSettingsOpen}
         onClose={() => setIsThemeSettingsOpen(false)}
         currentAccent={sheetAccent}
-        onSaved={(accent) => setSheetAccent(accent)}
+        onSave={(color) => setSheetAccent(color)}
       />
 
+      {isLevelUpModalOpen && (
+        <LevelUpWizardModal
+          character={character}
+          onClose={() => setIsLevelUpModalOpen(false)}
+          onComplete={() => {
+            setIsLevelUpModalOpen(false);
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }
