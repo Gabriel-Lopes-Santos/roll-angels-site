@@ -106,7 +106,12 @@ export default function PiNoKyoChat({ role = 'dm', sheetId }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Erro: ${response.status} ${response.statusText}`);
+        let errMessage = `Erro: ${response.status} ${response.statusText}`;
+        try {
+          const errData = await response.json();
+          if (errData.error) errMessage = errData.error;
+        } catch(e) {}
+        throw new Error(errMessage);
       }
 
       const reader = response.body.getReader();
@@ -143,7 +148,7 @@ export default function PiNoKyoChat({ role = 'dm', sheetId }) {
       }
     } catch (err) {
       console.error(err);
-      setError('A magia falhou. Não foi possível conectar ao constructo.');
+      setError(err.message || 'A magia falhou. Não foi possível conectar ao constructo.');
       setMessages(prev => prev.filter(m => m.content !== '' || m.role !== 'assistant'));
     } finally {
       setIsLoading(false);
