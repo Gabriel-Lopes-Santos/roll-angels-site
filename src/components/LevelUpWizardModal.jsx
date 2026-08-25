@@ -79,8 +79,8 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
     const req = MULTICLASS_REQUIREMENTS[cls.id];
     if (!req) return true;
     return req({
-      str: character.str, dex: character.dex, con: character.con,
-      int: character.int, wis: character.wis, cha: character.cha
+      str: character.attributes.str, dex: character.attributes.dex, con: character.attributes.con,
+      int: character.attributes.int, wis: character.attributes.wis, cha: character.attributes.cha
     });
   };
 
@@ -194,7 +194,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
     setHpRoll(roll);
   };
 
-  const getConMod = () => Math.floor((character.con - 10) / 2);
+  const getConMod = () => Math.floor((character.attributes.con - 10) / 2);
   const getAverageHp = () => {
     const maxDie = CLASS_HIT_DICE[selectedClassId] || 8;
     return Math.floor(maxDie / 2) + 1;
@@ -240,24 +240,24 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
       let updateData = {
         level: newCharLevel,
         exp: character.exp,
-        hit_points_max: character.hit_points_max + calculateAddedHp(),
-        hit_points: character.hit_points + calculateAddedHp(),
+        hit_points_max: character.stats.hpMax + calculateAddedHp(),
+        hit_points: character.stats.hpCurrent + calculateAddedHp(),
         proficiency_bonus: getProficiencyBonus(newCharLevel)
       };
 
       if (needsAsi && asiType === 'asi') {
-        updateData.base_str = character.base_str + asiStats.str;
-        updateData.str = character.str + asiStats.str;
-        updateData.base_dex = character.base_dex + asiStats.dex;
-        updateData.dex = character.dex + asiStats.dex;
-        updateData.base_con = character.base_con + asiStats.con;
-        updateData.con = character.con + asiStats.con;
-        updateData.base_int = character.base_int + asiStats.int;
-        updateData.int = character.int + asiStats.int;
-        updateData.base_wis = character.base_wis + asiStats.wis;
-        updateData.wis = character.wis + asiStats.wis;
-        updateData.base_cha = character.base_cha + asiStats.cha;
-        updateData.cha = character.cha + asiStats.cha;
+        updateData.base_str = character.baseStats.base_str + asiStats.str;
+        updateData.str = character.attributes.str + asiStats.str;
+        updateData.base_dex = character.baseStats.base_dex + asiStats.dex;
+        updateData.dex = character.attributes.dex + asiStats.dex;
+        updateData.base_con = character.baseStats.base_con + asiStats.con;
+        updateData.con = character.attributes.con + asiStats.con;
+        updateData.base_int = character.baseStats.base_int + asiStats.int;
+        updateData.int = character.attributes.int + asiStats.int;
+        updateData.base_wis = character.baseStats.base_wis + asiStats.wis;
+        updateData.wis = character.attributes.wis + asiStats.wis;
+        updateData.base_cha = character.baseStats.base_cha + asiStats.cha;
+        updateData.cha = character.attributes.cha + asiStats.cha;
       }
       
       await supabase.from('char_sheet').update(updateData).eq('id', character.id);
@@ -517,7 +517,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {['str', 'dex', 'con', 'int', 'wis', 'cha'].map(st => (
                             <div key={st} className="flex flex-col bg-black/40 p-2 rounded-lg items-center">
-                              <span className="uppercase text-[10px] font-bold text-neutral-400 mb-1">{st} ({character[st] + asiStats[st]})</span>
+                              <span className="uppercase text-[10px] font-bold text-neutral-400 mb-1">{st} ({character.attributes[st] + asiStats[st]})</span>
                               <div className="flex items-center gap-2">
                                 <button onClick={() => setAsiStats({...asiStats, [st]: Math.max(0, asiStats[st]-1)})} className="text-neutral-400 hover:text-white w-6 h-6 flex items-center justify-center bg-white/5 rounded">-</button>
                                 <span className="text-white font-bold w-4 text-center">{asiStats[st]}</span>

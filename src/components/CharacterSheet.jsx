@@ -246,6 +246,7 @@ export default function CharacterSheet() {
               <span>{displayRace}</span>
               <span className="text-sheet-accent opacity-100">•</span>
               <span>Lvl {character.level || 1}</span>
+              {console.log('EXP:', character.exp, 'LVL:', character.level, 'CAN LEVEL:', canLevelUp(character.exp || 0, character.level || 1))}
               {canLevelUp(character.exp || 0, character.level || 1) && (
                 <button 
                   onClick={() => setIsLevelUpModalOpen(true)}

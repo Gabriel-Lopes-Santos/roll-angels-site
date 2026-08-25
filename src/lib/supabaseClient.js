@@ -244,8 +244,17 @@ export async function getCharacterProfile(charSheetId) {
         con: charData.con,
         int: charData.int,
         wis: charData.wis,
-        cha: charData.cha
+        cha: charData.cha,
       },
+      baseStats: {
+        base_str: charData.base_str || charData.str,
+        base_dex: charData.base_dex || charData.dex,
+        base_con: charData.base_con || charData.con,
+        base_int: charData.base_int || charData.int,
+        base_wis: charData.base_wis || charData.wis,
+        base_cha: charData.base_cha || charData.cha
+      },
+      exp: charData.exp || 0,
       savingThrows: savingThrowsProfs,
       skills: mappedSkills,
       inventory: {
