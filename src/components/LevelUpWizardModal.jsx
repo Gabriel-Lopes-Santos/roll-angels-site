@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { XP_THRESHOLDS, canLevelUp, CLASS_HIT_DICE, MULTICLASS_REQUIREMENTS, getProficiencyBonus } from '../lib/levelProgression';
-import { Loader2, X, ChevronRight, Check } from 'lucide-react';
+import { Loader2, X, ChevronRight, Check, Dices } from 'lucide-react';
 
 export default function LevelUpWizardModal({ character, onClose, onComplete }) {
   const [step, setStep] = useState(0); // 0: HP/Overview (default), -1: Multiclass Select
