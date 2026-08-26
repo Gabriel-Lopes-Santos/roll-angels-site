@@ -114,7 +114,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
       
       setFeatures(allFeatures);
 
-      const unlockRule = allFeatures.find(f => f.rules_json?.type === 'subclass_unlock');
+      const unlockRule = allFeatures.find(f => f.rules_json?.type === 'subclass_unlock' || f.rules_json?.type === 'subclass_selection');
       if (unlockRule) {
         setNeedsSubclass(true);
         const { data: subData } = await supabase.from('subclasses').select('*').eq('class_id', clsId);
