@@ -550,6 +550,11 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                     </div>
                   )}
 
+                  <div className="bg-sheet-accent/10 p-4 rounded-xl border border-sheet-accent/30 text-center mb-4">
+                    <span className="text-sheet-accent font-bold text-sm block mb-1">Aviso para Conjuradores</span>
+                    <span className="text-neutral-400 text-xs">Se você ganhou novos espaços de magia ou magias conhecidas, configure-os manualmente na aba <b>Magias</b> após finalizar!</span>
+                  </div>
+
                   <div className="flex justify-between pt-4">
                     <button onClick={() => setStep(0)} className="px-4 py-2 text-neutral-400 hover:text-white transition-colors">Voltar</button>
                     <button 
