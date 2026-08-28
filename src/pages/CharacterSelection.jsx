@@ -22,15 +22,6 @@ export default function CharacterSelection() {
         return;
       }
 
-      const rememberMe = localStorage.getItem('remember_me');
-      const tempSession = sessionStorage.getItem('temp_session');
-
-      if (rememberMe === 'false' && !tempSession) {
-        await signOut();
-        navigate('/login');
-        return;
-      }
-
       setUser(session.user);
       
       const [charsResult, requestResult, fullReqsResult, dmStatus, sessionResult] = await Promise.all([

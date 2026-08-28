@@ -1015,15 +1015,20 @@ export async function getSpellcastingInfo(sheetId) {
 
     // Calcular nível de conjurador para slots
     const classLevel = charClass.level || sheet.level || 1;
-    let casterLevel;
+    let casterLevel = 0;
     if (spellcastingType === 'full') {
       casterLevel = classLevel;
-    } else if (spellcastingType === 'half' || spellcastingType === 'half_up') {
-      casterLevel = Math.max(1, Math.floor(classLevel / 2));
+    } else if (spellcastingType === 'half') {
+      // Paladin and Ranger start getting spells at level 2
+      casterLevel = classLevel >= 2 ? Math.ceil(classLevel / 2) : 0;
+    } else if (spellcastingType === 'half_up') {
+      // Artificer gets spells at level 1
+      casterLevel = Math.ceil(classLevel / 2);
     } else if (spellcastingType === 'pact') {
       casterLevel = 0; // Warlock usa pact slots separados
     } else {
-      casterLevel = Math.max(1, Math.floor(classLevel / 3));
+      // Fallback para third casters (Eldritch Knight, Arcane Trickster)
+      casterLevel = classLevel >= 3 ? Math.ceil(classLevel / 3) : 0;
     }
 
     // Buscar slots

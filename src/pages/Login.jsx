@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signIn, signUp, resetPassword } from '../lib/supabaseClient';
+import { signIn, signUp, resetPassword, getSession } from '../lib/supabaseClient';
 import { Loader2, ArrowLeft, MailCheck } from 'lucide-react';
 import bgImage from '../assets/login-bg.png';
 
@@ -8,13 +8,27 @@ import bgImage from '../assets/login-bg.png';
 export default function Login() {
   const navigate = useNavigate();
   const [view, setView] = useState('login');
-  const [email, setEmail] = useState('');
+  
+  // Initialize email and rememberMe from localStorage
+  const [email, setEmail] = useState(() => localStorage.getItem('ra_saved_email') || '');
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('ra_remember_me') !== 'false');
+  
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+
+  // Auto-login if session already exists
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await getSession();
+      if (data?.session) {
+        navigate('/selecao');
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,6 +40,13 @@ export default function Login() {
         // Salvar a preferência ANTES do login para que o cliente Supabase
         // (que lê esta flag na inicialização) use o storage correto no próximo load.
         localStorage.setItem('ra_remember_me', rememberMe ? 'true' : 'false');
+        
+        // Salvar e-mail para preencher automaticamente no próximo acesso se "Lembre-me" estiver ativo
+        if (rememberMe) {
+          localStorage.setItem('ra_saved_email', email);
+        } else {
+          localStorage.removeItem('ra_saved_email');
+        }
 
         const { data, error } = await signIn(email, password);
         if (error) throw error;
@@ -56,7 +77,8 @@ export default function Login() {
     setView('login');
     setError(null);
     setResetSent(false);
-    setEmail('');
+    // Don't clear email when going back if we have a saved one, but usually it's fine.
+    // Let's not clear it so they don't have to retype if they just clicked forgot password.
   };
 
   return (
