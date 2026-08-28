@@ -344,6 +344,25 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
     if (tab === 'choices') return 'Escolhas / Talentos';
   };
 
+  const getSubclassSpellClassLevel = (className, spellLevel) => {
+    if (spellLevel === 0) return 1;
+    className = className?.toLowerCase() || '';
+    if (['paladin', 'ranger', 'artificer'].includes(className)) {
+      if (spellLevel === 1) return 3;
+      if (spellLevel === 2) return 5;
+      if (spellLevel === 3) return 9;
+      if (spellLevel === 4) return 13;
+      if (spellLevel === 5) return 17;
+    } else {
+      if (spellLevel === 1) return 1;
+      if (spellLevel === 2) return 3;
+      if (spellLevel === 3) return 5;
+      if (spellLevel === 4) return 7;
+      if (spellLevel === 5) return 9;
+    }
+    return '?';
+  };
+
   const toggleSpellPick = (spell, isCantrip) => {
     if (isCantrip) {
       if (selectedCantrips.includes(spell.id)) {
@@ -531,7 +550,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                            {Array.from(new Set(previewSubclassSpells.map(s => s.level))).sort((a,b) => a-b).map(lvl => (
                              <div key={lvl} className="bg-black/40 rounded-xl p-3 border border-white/5">
                                <span className="block text-[10px] uppercase font-bold text-neutral-500 mb-2">
-                                 {lvl === 0 ? 'Truques (Nível 0)' : `Nível ${lvl} (Libera ao ter Slot de Nível ${lvl})`}
+                                 {lvl === 0 ? 'Truques (Libera no Nível 1)' : `Nível de ${currentClassData.name_pt || currentClassData.name} ${getSubclassSpellClassLevel(currentClassData.name, lvl)} (Magias de Nível ${lvl})`}
                                </span>
                                <div className="flex flex-wrap gap-2">
                                  {previewSubclassSpells.filter(s => s.level === lvl).map(spell => (
