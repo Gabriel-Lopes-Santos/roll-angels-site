@@ -23,6 +23,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
   const [needsSubclass, setNeedsSubclass] = useState(false);
   const [subclasses, setSubclasses] = useState([]);
   const [selectedSubclassId, setSelectedSubclassId] = useState('');
+  const [previewSubclassFeatures, setPreviewSubclassFeatures] = useState([]);
   
   // Spells
   const [needsSpells, setNeedsSpells] = useState(false);
@@ -49,6 +50,18 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
   useEffect(() => {
     initWizard();
   }, []);
+
+  useEffect(() => {
+    if (selectedSubclassId && needsSubclass) {
+      supabase.from('subclass_features')
+        .select('*')
+        .eq('subclass_id', selectedSubclassId)
+        .eq('level_required', newClassLevel)
+        .then(({ data }) => setPreviewSubclassFeatures(data || []));
+    } else {
+      setPreviewSubclassFeatures([]);
+    }
+  }, [selectedSubclassId, needsSubclass, newClassLevel]);
 
   const initWizard = async () => {
     setLoading(true);
@@ -476,7 +489,18 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                 {selectedSubclassId && (
                   <div className="bg-surface-container p-6 rounded-2xl border border-white/5">
                      <h4 className="font-bold text-cyan-400 mb-3 uppercase tracking-widest text-xs">O que você ganha agora</h4>
-                     <p className="text-sm text-neutral-400 italic">Características da subclasse serão exibidas na sua ficha após a conclusão.</p>
+                     {previewSubclassFeatures.length === 0 ? (
+                       <p className="text-sm text-neutral-400 italic">Nenhuma característica nova neste nível específico, ou elas são passivas (como liberar expansão de magias).</p>
+                     ) : (
+                       <ul className="space-y-4">
+                         {previewSubclassFeatures.map(f => (
+                           <li key={f.id} className="border-l-2 border-cyan-500 pl-4">
+                             <span className="block font-bold text-sm text-white mb-1">{f.name_pt || f.name}</span>
+                             <span className="block text-xs text-neutral-400">{f.summary}</span>
+                           </li>
+                         ))}
+                       </ul>
+                     )}
                   </div>
                 )}
               </div>
