@@ -508,7 +508,7 @@ export default function CharacterSheet() {
         open={isThemeSettingsOpen}
         onClose={() => setIsThemeSettingsOpen(false)}
         currentAccent={sheetAccent}
-        onSave={(color) => setSheetAccent(color)}
+        onSaved={(color) => setSheetAccent(color)}
       />
 
       {isLevelUpModalOpen && (
