@@ -24,7 +24,8 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
   const [subclasses, setSubclasses] = useState([]);
   const [selectedSubclassId, setSelectedSubclassId] = useState('');
   const [previewSubclassFeatures, setPreviewSubclassFeatures] = useState([]);
-  
+  const [previewSubclassSpells, setPreviewSubclassSpells] = useState([]);
+
   // Spells
   const [needsSpells, setNeedsSpells] = useState(false);
   const [spellsToLearn, setSpellsToLearn] = useState({ cantrips: 0, spells: 0 });
@@ -58,8 +59,26 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
         .eq('subclass_id', selectedSubclassId)
         .eq('level_required', newClassLevel)
         .then(({ data }) => setPreviewSubclassFeatures(data || []));
+
+      supabase.from('subclass_spells')
+        .select('spell_id')
+        .eq('subclass_id', selectedSubclassId)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            const spellIds = data.map(d => d.spell_id);
+            supabase.from('spells')
+              .select('id, name, name_pt, level')
+              .in('id', spellIds)
+              .order('level')
+              .order('name')
+              .then(({ data: sp }) => setPreviewSubclassSpells(sp || []));
+          } else {
+            setPreviewSubclassSpells([]);
+          }
+        });
     } else {
       setPreviewSubclassFeatures([]);
+      setPreviewSubclassSpells([]);
     }
   }, [selectedSubclassId, needsSubclass, newClassLevel]);
 
@@ -487,19 +506,44 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                   </select>
                 </div>
                 {selectedSubclassId && (
-                  <div className="bg-surface-container p-6 rounded-2xl border border-white/5">
-                     <h4 className="font-bold text-cyan-400 mb-3 uppercase tracking-widest text-xs">O que você ganha agora</h4>
-                     {previewSubclassFeatures.length === 0 ? (
-                       <p className="text-sm text-neutral-400 italic">Nenhuma característica nova neste nível específico, ou elas são passivas (como liberar expansão de magias).</p>
-                     ) : (
-                       <ul className="space-y-4">
-                         {previewSubclassFeatures.map(f => (
-                           <li key={f.id} className="border-l-2 border-cyan-500 pl-4">
-                             <span className="block font-bold text-sm text-white mb-1">{f.name_pt || f.name}</span>
-                             <span className="block text-xs text-neutral-400">{f.summary}</span>
-                           </li>
-                         ))}
-                       </ul>
+                  <div className="bg-surface-container p-6 rounded-2xl border border-white/5 space-y-6">
+                     <div>
+                       <h4 className="font-bold text-cyan-400 mb-3 uppercase tracking-widest text-xs">O que você ganha agora</h4>
+                       {previewSubclassFeatures.length === 0 ? (
+                         <p className="text-sm text-neutral-400 italic">Nenhuma característica nova neste nível específico, ou elas são passivas (como liberar expansão de magias).</p>
+                       ) : (
+                         <ul className="space-y-4">
+                           {previewSubclassFeatures.map(f => (
+                             <li key={f.id} className="border-l-2 border-cyan-500 pl-4">
+                               <span className="block font-bold text-sm text-white mb-1">{f.name_pt || f.name}</span>
+                               <span className="block text-xs text-neutral-400">{f.summary}</span>
+                             </li>
+                           ))}
+                         </ul>
+                       )}
+                     </div>
+
+                     {previewSubclassSpells.length > 0 && (
+                       <div>
+                         <h4 className="font-bold text-cyan-400 mb-3 uppercase tracking-widest text-xs">Magias Garantidas pela Subclasse</h4>
+                         <p className="text-xs text-neutral-400 mb-4">Estas magias estarão sempre preparadas ou serão adicionadas à sua lista de magias conhecidas assim que você tiver nível suficiente em slots de magia para lançá-las.</p>
+                         <div className="flex flex-col gap-3">
+                           {Array.from(new Set(previewSubclassSpells.map(s => s.level))).sort((a,b) => a-b).map(lvl => (
+                             <div key={lvl} className="bg-black/40 rounded-xl p-3 border border-white/5">
+                               <span className="block text-[10px] uppercase font-bold text-neutral-500 mb-2">
+                                 {lvl === 0 ? 'Truques (Nível 0)' : `Nível ${lvl} (Libera ao ter Slot de Nível ${lvl})`}
+                               </span>
+                               <div className="flex flex-wrap gap-2">
+                                 {previewSubclassSpells.filter(s => s.level === lvl).map(spell => (
+                                   <span key={spell.id} className="bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-2 py-1 rounded text-xs font-bold">
+                                     {spell.name_pt || spell.name}
+                                   </span>
+                                 ))}
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
                      )}
                   </div>
                 )}
