@@ -973,7 +973,7 @@ export async function getSpellcastingInfo(sheetId) {
       .select(`
         id, level, proficiency_bonus,
         str, dex, con, int, wis, cha,
-        char_class(level, class_id, classes(name, name_pt, spellcasting_type, primary_ability))
+        char_class(level, class_id, subclass_id, classes(name, name_pt, spellcasting_type, primary_ability))
       `)
       .eq('id', sheetId)
       .maybeSingle();
@@ -1078,6 +1078,7 @@ export async function getSpellcastingInfo(sheetId) {
         className: classInfo.name_pt || classInfo.name,
         classNameEn,
         classId: charClass.class_id,
+        subclassId: charClass.subclass_id,
         spellcastingType,
         needsPreparation,
         spellcastingAbility: ABILITY_LABELS[spellcastingAbilityKey] || 'INT',
@@ -1120,12 +1121,9 @@ export async function getCharacterGrimoire(sheetId, spellcastingInfo) {
       .select('spell_id, source, spells(*)')
       .eq('sheet_id', sheetId);
 
-    // 3. (Removido: o populamento manual será feito por um botão)
-
-
     const knownSpells = (knownLinks || []).map(k => ({ ...k.spells, source: k.source }));
 
-    // 4. Buscar magias preparadas (IDs)
+    // 3. Buscar magias preparadas (IDs)
     const { data: preparedLinks } = await supabase
       .from('char_spells')
       .select('spell_id')
@@ -1133,10 +1131,29 @@ export async function getCharacterGrimoire(sheetId, spellcastingInfo) {
 
     const preparedSpellIds = new Set((preparedLinks || []).map(p => p.spell_id));
 
-    return { cantrips, knownSpells, preparedSpellIds, error: null };
+    // 4. Buscar magias da subclasse (Sempre Preparadas)
+    let alwaysPreparedSpells = [];
+    if (spellcastingInfo.subclassId && spellcastingInfo.classNameEn !== 'warlock') {
+      const { data: subSpellsLinks } = await supabase
+        .from('subclass_spells')
+        .select('spell_id, spells(*)')
+        .eq('subclass_id', spellcastingInfo.subclassId);
+      
+      if (subSpellsLinks) {
+        const slots = spellcastingInfo.slots || {};
+        const maxSpellLevel = Math.max(0, ...Object.keys(slots).filter(k => !isNaN(k)).map(Number), spellcastingInfo.slots?.pactSlotLevel || 0);
+
+        alwaysPreparedSpells = subSpellsLinks
+          .map(link => link.spells)
+          .filter(spell => spell.level <= maxSpellLevel)
+          .map(spell => ({ ...spell, source: 'subclass', isAlwaysPrepared: true }));
+      }
+    }
+
+    return { cantrips, knownSpells, preparedSpellIds, alwaysPreparedSpells, error: null };
   } catch (err) {
     console.error('Erro ao buscar grimório:', err);
-    return { cantrips: [], knownSpells: [], preparedSpellIds: new Set(), error: err.message };
+    return { cantrips: [], knownSpells: [], preparedSpellIds: new Set(), alwaysPreparedSpells: [], error: err.message };
   }
 }
 

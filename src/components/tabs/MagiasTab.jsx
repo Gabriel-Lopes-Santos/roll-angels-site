@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkle } from 'lucide-react';
 import {
   getSpellcastingInfo,
   getCharacterGrimoire,
@@ -84,6 +84,7 @@ export default function MagiasTab({ character }) {
   const [spellInfo, setSpellInfo] = useState(null);
   const [cantrips, setCantrips] = useState([]);
   const [knownSpells, setKnownSpells] = useState([]);
+  const [alwaysPreparedSpells, setAlwaysPreparedSpells] = useState([]);
   const [preparedIds, setPreparedIds] = useState(new Set());
   const [togglingId, setTogglingId] = useState(null);
   const [expandedSpell, setExpandedSpell] = useState(null);
@@ -128,6 +129,7 @@ export default function MagiasTab({ character }) {
       const grimoire = await getCharacterGrimoire(character.id, info);
       setCantrips(grimoire.cantrips);
       setKnownSpells(grimoire.knownSpells);
+      setAlwaysPreparedSpells(grimoire.alwaysPreparedSpells || []);
       setPreparedIds(grimoire.preparedSpellIds);
     }
 
@@ -186,7 +188,16 @@ export default function MagiasTab({ character }) {
 
   // ---------- GRIMÓRIO COMPLETO ----------
   const groupedByLevel = {};
-  knownSpells.forEach(spell => {
+  
+  // Mesclar magias conhecidas com sempre preparadas, evitando duplicatas
+  const allSpellsMap = new Map();
+  knownSpells.forEach(s => allSpellsMap.set(s.id, s));
+  alwaysPreparedSpells.forEach(s => {
+    // Se a magia sempre preparada já existir nas conhecidas, sobrescrevemos para garantir que ela receba a flag `isAlwaysPrepared`
+    allSpellsMap.set(s.id, { ...allSpellsMap.get(s.id), ...s, isAlwaysPrepared: true });
+  });
+
+  Array.from(allSpellsMap.values()).forEach(spell => {
     const lvl = spell.level || 1;
     if (!groupedByLevel[lvl]) groupedByLevel[lvl] = [];
     groupedByLevel[lvl].push(spell);
@@ -465,6 +476,7 @@ function SpellSection({ title, icon, spells, showPrepareToggle, preparedIds, onT
             spell={spell}
             showPrepareToggle={showPrepareToggle}
             isPrepared={preparedIds.has(spell.id)}
+            isAlwaysPrepared={spell.isAlwaysPrepared}
             isToggling={togglingId === spell.id}
             onToggle={() => onTogglePrepare?.(spell.id)}
             isExpanded={expandedSpell === spell.id}
@@ -476,7 +488,7 @@ function SpellSection({ title, icon, spells, showPrepareToggle, preparedIds, onT
   );
 }
 
-function SpellCard({ spell, showPrepareToggle, isPrepared, isToggling, onToggle, isExpanded, onToggleExpand }) {
+function SpellCard({ spell, showPrepareToggle, isPrepared, isAlwaysPrepared, isToggling, onToggle, isExpanded, onToggleExpand }) {
   const school = getSchoolStyle(spell.school_pt || spell.school);
   const spellName = spell.name_pt || spell.name || '???';
 
@@ -516,23 +528,32 @@ function SpellCard({ spell, showPrepareToggle, isPrepared, isToggling, onToggle,
               {school.label}
             </span>
             {showPrepareToggle && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onToggle(); }}
-                disabled={isToggling}
-                className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all shrink-0 ${
-                  isPrepared
-                    ? 'border-green-500 bg-green-500/20'
-                    : 'border-on-surface-variant/20 bg-transparent hover:border-on-surface-variant/40'
-                }`}
-                title={isPrepared ? 'Despreparar' : 'Preparar'}
-              >
-                {isToggling ? (
-                  <Loader2 className="w-3 h-3 animate-spin text-on-surface-variant/40" />
-                ) : isPrepared ? (
-                  <span className="material-symbols-outlined text-green-500 text-xs" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>check</span>
-                ) : null}
-              </button>
+              isAlwaysPrepared ? (
+                <div
+                  className="w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 border-amber-500 bg-amber-500/20 cursor-not-allowed"
+                  title="Sempre Preparada (Subclasse)"
+                >
+                  <Sparkle className="w-3 h-3 text-amber-500" style={{ fill: "currentColor" }} />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onToggle(); }}
+                  disabled={isToggling}
+                  className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all shrink-0 ${
+                    isPrepared
+                      ? 'border-green-500 bg-green-500/20'
+                      : 'border-on-surface-variant/20 bg-transparent hover:border-on-surface-variant/40'
+                  }`}
+                  title={isPrepared ? 'Despreparar' : 'Preparar'}
+                >
+                  {isToggling ? (
+                    <Loader2 className="w-3 h-3 animate-spin text-on-surface-variant/40" />
+                  ) : isPrepared ? (
+                    <span className="material-symbols-outlined text-green-500 text-xs" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>check</span>
+                  ) : null}
+                </button>
+              )
             )}
           </div>
         </div>
