@@ -1850,3 +1850,519 @@ export async function markAllNotificationsRead() {
     return { success: false, error: err.message };
   }
 }
+
+// =====================================================================
+// CONTROLE DE CAMPANHA
+// =====================================================================
+
+export async function getCampaignById(campaignId) {
+  try {
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('id', campaignId)
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getCampaignGroups(campaignId) {
+  try {
+    const { data, error } = await supabase
+      .from('adventure_groups')
+      .select(`
+        id, name, description, campaign_id, created_at,
+        group_members (
+          id, sheet_id,
+          char_sheet ( id, name, level, exp, avatar_url, owner_id, type,
+            char_class ( id, class_id, level, classes:class_id ( id, name, name_pt ) )
+          )
+        )
+      `)
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function getCampaignSessions(campaignId, limit = 50) {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        id, session_number, title, status, started_at, ended_at, duration_minutes,
+        adventure_groups ( id, name ),
+        arcs ( id, title ),
+        session_participants ( id, sheet_id, char_sheet ( id, name, avatar_url ) )
+      `)
+      .eq('campaign_id', campaignId)
+      .order('started_at', { ascending: false })
+      .limit(limit);
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+// =====================================================================
+// XP MANAGEMENT
+// =====================================================================
+
+export async function grantXP(sheetIds, amount, source, campaignId = null, sessionId = null) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { success: false, error: 'Não autenticado' };
+
+    const results = [];
+    const canLevelUpList = [];
+
+    for (const sheetId of sheetIds) {
+      // 1. Fetch current XP and level
+      const { data: sheet, error: fetchErr } = await supabase
+        .from('char_sheet')
+        .select('id, name, exp, level, owner_id')
+        .eq('id', sheetId)
+        .single();
+
+      if (fetchErr || !sheet) {
+        results.push({ sheetId, success: false, error: fetchErr?.message || 'Ficha não encontrada' });
+        continue;
+      }
+
+      const newExp = (sheet.exp || 0) + amount;
+
+      // 2. Update XP
+      const { error: updateErr } = await supabase
+        .from('char_sheet')
+        .update({ exp: newExp })
+        .eq('id', sheetId);
+
+      if (updateErr) {
+        results.push({ sheetId, success: false, error: updateErr.message });
+        continue;
+      }
+
+      // 3. Log XP grant
+      await supabase.from('xp_log').insert({
+        sheet_id: sheetId,
+        campaign_id: campaignId,
+        session_id: sessionId,
+        amount,
+        source: source || '',
+        granted_by: session.user.id,
+      });
+
+      // 4. Check if can level up
+      const { canLevelUp } = await import('./levelProgression.js');
+      const couldLevelUp = canLevelUp(newExp, sheet.level || 1);
+      if (couldLevelUp) {
+        canLevelUpList.push({ sheetId, name: sheet.name, newExp, currentLevel: sheet.level || 1 });
+      }
+
+      // 5. Notify owner
+      if (sheet.owner_id) {
+        await supabase.from('notifications').insert({
+          user_id: sheet.owner_id,
+          type: 'xp_grant',
+          title: `${sheet.name} recebeu ${amount} XP!`,
+          message: source ? `Motivo: ${source}` : '',
+          metadata: { sheet_id: sheetId, amount, new_total: newExp },
+        });
+      }
+
+      results.push({ sheetId, success: true, newExp });
+    }
+
+    return { success: true, results, canLevelUp: canLevelUpList };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getXPHistory(campaignId, limit = 50) {
+  try {
+    let query = supabase
+      .from('xp_log')
+      .select(`
+        id, sheet_id, amount, source, created_at, campaign_id, session_id,
+        char_sheet:sheet_id ( id, name, avatar_url )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (campaignId) {
+      query = query.eq('campaign_id', campaignId);
+    }
+
+    const { data, error } = await query;
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+// =====================================================================
+// QUESTS
+// =====================================================================
+
+export async function getQuests(campaignId, filters = {}) {
+  try {
+    let query = supabase
+      .from('quests')
+      .select(`
+        id, title, description, main, quest_type, status, visibility,
+        xp_reward, gold_reward, created_at, completed_at,
+        campaign_id, arc_id, group_id, assigned_sheet_id,
+        quest_objective ( id, name, finished, status, order_index, quest_id ),
+        adventure_groups:group_id ( id, name ),
+        assigned_char:assigned_sheet_id ( id, name, avatar_url )
+      `)
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+
+    if (filters.status) query = query.eq('status', filters.status);
+    if (filters.quest_type) query = query.eq('quest_type', filters.quest_type);
+
+    const { data, error } = await query;
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createQuest(questData) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: null, error: 'Não autenticado' };
+
+    const { data, error } = await supabase
+      .from('quests')
+      .insert({
+        title: questData.title,
+        description: questData.description || '',
+        campaign_id: questData.campaign_id,
+        arc_id: questData.arc_id || null,
+        group_id: questData.group_id || null,
+        assigned_sheet_id: questData.assigned_sheet_id || null,
+        quest_type: questData.quest_type || 'group',
+        status: 'active',
+        visibility: questData.visibility || 'visible',
+        xp_reward: questData.xp_reward || 0,
+        gold_reward: questData.gold_reward || 0,
+        main: questData.main ?? false,
+        created_by: session.user.id,
+      })
+      .select()
+      .single();
+
+    // Create objectives if provided
+    if (data && questData.objectives?.length > 0) {
+      const objRows = questData.objectives.map((obj, i) => ({
+        quest_id: data.id,
+        name: obj.name || obj,
+        status: 'pending',
+        order_index: i,
+      }));
+      await supabase.from('quest_objective').insert(objRows);
+    }
+
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function updateQuest(questId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('quests')
+      .update(updates)
+      .eq('id', questId)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function deleteQuest(questId) {
+  try {
+    // Delete objectives first
+    await supabase.from('quest_objective').delete().eq('quest_id', questId);
+    const { error } = await supabase.from('quests').delete().eq('id', questId);
+    return { success: !error, error };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateQuestObjectiveStatus(objectiveId, status) {
+  try {
+    const { data, error } = await supabase
+      .from('quest_objective')
+      .update({ status })
+      .eq('id', objectiveId)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function createQuestObjective(questId, name, orderIndex = 0) {
+  try {
+    const { data, error } = await supabase
+      .from('quest_objective')
+      .insert({ quest_id: questId, name, status: 'pending', order_index: orderIndex })
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function deleteQuestObjective(objectiveId) {
+  try {
+    const { error } = await supabase.from('quest_objective').delete().eq('id', objectiveId);
+    return { success: !error, error };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function completeQuest(questId) {
+  try {
+    // Mark quest as completed
+    const { data, error } = await supabase
+      .from('quests')
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
+      .eq('id', questId)
+      .select('*, adventure_groups:group_id ( id, name, group_members ( sheet_id ) )')
+      .single();
+
+    if (error) return { success: false, error };
+
+    // Mark all objectives as completed
+    await supabase
+      .from('quest_objective')
+      .update({ status: 'completed' })
+      .eq('quest_id', questId);
+
+    // Grant XP reward if any
+    let xpResults = null;
+    if (data.xp_reward > 0) {
+      let targetSheetIds = [];
+      if (data.quest_type === 'individual' && data.assigned_sheet_id) {
+        targetSheetIds = [data.assigned_sheet_id];
+      } else if (data.quest_type === 'group' && data.adventure_groups?.group_members) {
+        targetSheetIds = data.adventure_groups.group_members.map(m => m.sheet_id);
+      }
+
+      if (targetSheetIds.length > 0) {
+        xpResults = await grantXP(
+          targetSheetIds,
+          data.xp_reward,
+          `Quest completada: ${data.title}`,
+          data.campaign_id
+        );
+      }
+    }
+
+    return { success: true, data, xpResults };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// =====================================================================
+// NPCs (CAMPAIGN)
+// =====================================================================
+
+export async function createNPC(campaignId, npcData) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: null, error: 'Não autenticado' };
+
+    // 1. Create char_sheet with type 'npc' and level 0
+    const { data: sheet, error: sheetErr } = await supabase
+      .from('char_sheet')
+      .insert({
+        type: 'npc',
+        name: npcData.name,
+        level: 0,
+        race_id: npcData.race_id || null,
+        sub_race_id: null,
+        background_id: null,
+        owner_id: session.user.id,
+        str: npcData.str ?? 10,
+        dex: npcData.dex ?? 10,
+        con: npcData.con ?? 10,
+        int: npcData.int ?? 10,
+        wis: npcData.wis ?? 10,
+        cha: npcData.cha ?? 10,
+        hit_points: npcData.hit_points ?? 10,
+        hit_points_max: npcData.hit_points_max ?? 10,
+        armor_class: npcData.armor_class ?? 10,
+        speed: npcData.speed ?? 9,
+        size: npcData.size || 'Medium',
+        alignment: npcData.alignment || 'TN',
+        passive_perception: npcData.passive_perception ?? 10,
+        proficiency_bonus: npcData.proficiency_bonus ?? 2,
+        avatar_url: npcData.avatar_url || null,
+      })
+      .select()
+      .single();
+
+    if (sheetErr) return { data: null, error: sheetErr.message };
+
+    // 2. Create campaign_npcs link
+    const { data: npcLink, error: linkErr } = await supabase
+      .from('campaign_npcs')
+      .insert({
+        campaign_id: campaignId,
+        sheet_id: sheet.id,
+        role: npcData.role || 'neutral',
+        notes: npcData.notes || '',
+        is_alive: true,
+        first_session_id: npcData.first_session_id || null,
+      })
+      .select()
+      .single();
+
+    if (linkErr) return { data: null, error: linkErr.message };
+
+    return { data: { ...npcLink, char_sheet: sheet }, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getCampaignNPCs(campaignId) {
+  try {
+    const { data, error } = await supabase
+      .from('campaign_npcs')
+      .select(`
+        id, role, notes, is_alive, first_session_id, created_at,
+        char_sheet:sheet_id (
+          id, name, level, type, avatar_url,
+          str, dex, con, int, wis, cha,
+          hit_points, hit_points_max, armor_class, speed, size, alignment
+        )
+      `)
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function updateCampaignNPC(campaignNpcId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('campaign_npcs')
+      .update(updates)
+      .eq('id', campaignNpcId)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function toggleNPCAlive(campaignNpcId, isAlive) {
+  return updateCampaignNPC(campaignNpcId, { is_alive: isAlive });
+}
+
+export async function deleteCampaignNPC(campaignNpcId) {
+  try {
+    // Get sheet_id to also delete the char_sheet
+    const { data: npc } = await supabase
+      .from('campaign_npcs')
+      .select('sheet_id')
+      .eq('id', campaignNpcId)
+      .single();
+
+    await supabase.from('campaign_npcs').delete().eq('id', campaignNpcId);
+
+    if (npc?.sheet_id) {
+      await supabase.from('char_sheet').delete().eq('id', npc.sheet_id).eq('type', 'npc');
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// =====================================================================
+// CAMPAIGN KNOWLEDGE
+// =====================================================================
+
+export async function getCampaignKnowledge(campaignId, category = null) {
+  try {
+    let query = supabase
+      .from('campaign_knowledge')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+
+    if (category) query = query.eq('category', category);
+
+    const { data, error } = await query;
+    return { data: data || [], error };
+  } catch (err) {
+    return { data: [], error: err.message };
+  }
+}
+
+export async function createKnowledgeEntry(campaignId, entryData) {
+  try {
+    const { data, error } = await supabase
+      .from('campaign_knowledge')
+      .insert({
+        campaign_id: campaignId,
+        category: entryData.category || 'lore',
+        title: entryData.title,
+        content: entryData.content,
+        visibility: entryData.visibility || 'all',
+        session_id: entryData.session_id || null,
+      })
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function updateKnowledgeEntry(entryId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('campaign_knowledge')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', entryId)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function deleteKnowledgeEntry(entryId) {
+  try {
+    const { error } = await supabase.from('campaign_knowledge').delete().eq('id', entryId);
+    return { success: !error, error };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

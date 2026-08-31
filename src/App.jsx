@@ -5,6 +5,7 @@ import CharacterSelection from './pages/CharacterSelection'
 import CharacterCreationRequest from './pages/CharacterCreationRequest'
 import CharacterFullCreation from './pages/CharacterFullCreation'
 import DMDashboard from './pages/DMDashboard'
+import CampaignControl from './pages/CampaignControl'
 import ResetPassword from './pages/ResetPassword'
 import VTTPage from './pages/VTTPage'
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/criacao" element={<CharacterCreationRequest />} />
         <Route path="/criacao-completa/:requestId" element={<CharacterFullCreation />} />
         <Route path="/mestre" element={<DMDashboard />} />
+        <Route path="/mestre/campanha/:campaignId" element={<CampaignControl />} />
         <Route path="/ficha/:id" element={<CharacterSheet />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/vtt/:sessionId" element={<VTTPage />} />

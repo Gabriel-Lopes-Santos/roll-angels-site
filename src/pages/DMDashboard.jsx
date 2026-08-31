@@ -24,7 +24,7 @@ import {
   endSession,
   getSessionHistory,
 } from '../lib/supabaseClient';
-import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map } from 'lucide-react';
+import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map, ChevronRight } from 'lucide-react';
 import PiNoKyoChat from '../components/PiNoKyoChat';
 
 const ATTR_BR = {
@@ -968,7 +968,15 @@ export default function DMDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {campaigns.map(c => (
                   <div key={c.id} className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-5">
-                    <h4 className="font-bold text-white text-lg">{c.title}</h4>
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-bold text-white text-lg">{c.title}</h4>
+                      <button
+                        onClick={() => navigate(`/mestre/campanha/${c.id}`)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors shrink-0"
+                      >
+                        Entrar <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     {c.description && <p className="text-sm text-neutral-400 mt-1 mb-3">{c.description}</p>}
                     
                     <div className="mt-4">
