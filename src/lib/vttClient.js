@@ -240,7 +240,7 @@ export async function getMonstersList() {
   try {
     const { data, error } = await supabase
       .from('monster_sheet')
-      .select('id, name, size, alignment, armor_class, hit_points_max, hit_points, speed, str, dex, con, int, wis, cha, challange_class')
+      .select('id, name, size, alignment, armor_class, hit_points_max, hit_points, speed, str, dex, con, int, wis, cha, challenge_class')
       .order('name', { ascending: true });
     return { data: data || [], error };
   } catch (err) {
