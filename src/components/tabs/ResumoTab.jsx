@@ -1,4 +1,5 @@
 import { Heart, ShieldAlert, Swords } from 'lucide-react';
+import LexiconText from '../lexicon/LexiconText';
 
 export default function ResumoTab({ character }) {
   const hpPercentage = Math.max(0, Math.min(100, (character.stats.hpCurrent / character.stats.hpMax) * 100));
@@ -25,11 +26,11 @@ export default function ResumoTab({ character }) {
           
           <div className="flex gap-4">
             <div className="bg-black/50 border border-gray-700 px-4 py-2 rounded-md flex flex-col items-center">
-              <span className="text-xs text-gray-400 uppercase tracking-wider">Proficiência</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wider"><LexiconText text="Proficiência" /></span>
               <span className="text-xl font-bold text-white">+{character.stats.proficiencyBonus}</span>
             </div>
             <div className="bg-black/50 border border-gray-700 px-4 py-2 rounded-md flex flex-col items-center">
-              <span className="text-xs text-gray-400 uppercase tracking-wider">Deslocamento</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wider"><LexiconText text="Deslocamento" /></span>
               <span className="text-xl font-bold text-white">{character.stats.speed}m</span>
             </div>
           </div>
@@ -44,7 +45,7 @@ export default function ResumoTab({ character }) {
             <Heart size={80} className="text-red-500" />
           </div>
           <h3 className="text-sm text-gray-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2">
-            <Heart size={16} className="text-red-500" /> Pontos de Vida
+            <Heart size={16} className="text-red-500" /> <LexiconText text="Pontos de Vida" />
           </h3>
           <div className="flex items-end gap-2 mb-2">
             <span className="text-4xl font-bold text-white">{character.stats.hpCurrent}</span>
@@ -64,7 +65,7 @@ export default function ResumoTab({ character }) {
             <ShieldAlert size={80} className="text-blue-500" />
           </div>
           <h3 className="text-sm text-gray-400 uppercase font-bold tracking-widest mb-3 flex items-center gap-2">
-            <ShieldAlert size={16} className="text-blue-500" /> Classe de Armadura
+            <ShieldAlert size={16} className="text-blue-500" /> <LexiconText text="Classe de Armadura" />
           </h3>
           <div className="flex items-center gap-4">
             <div className="relative flex items-center justify-center">
@@ -72,7 +73,7 @@ export default function ResumoTab({ character }) {
                <span className="absolute text-2xl font-bold text-white">{character.stats.armorClass}</span>
             </div>
             <p className="text-sm text-gray-400 max-w-[120px]">
-              Dificuldade para ser atingido em combate.
+              <LexiconText text="Dificuldade para ser atingido em combate." />
             </p>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import LexiconText from '../lexicon/LexiconText';
 
 // Helper D&D Modificador (Já estava sendo usado antes)
 const getMod = (score) => {
@@ -35,7 +36,9 @@ export default function StatsTab({ character }) {
         <div className="bg-surface-container p-6 rounded relative overflow-hidden group">
           <div className="flex justify-between items-end mb-4 relative z-10">
             <div>
-              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-primary-container uppercase">Pontos de Vida</p>
+              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-primary-container uppercase">
+                <LexiconText text="Pontos de Vida" />
+              </p>
               <h3 className="font-['Space_Grotesk'] text-3xl font-black">
                 {character.stats.hpCurrent} <span className="text-on-surface-variant/20">/ {character.stats.hpMax}</span>
               </h3>
@@ -58,7 +61,9 @@ export default function StatsTab({ character }) {
               <span className="material-symbols-outlined text-slate-400 text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
             </div>
             <div>
-              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">Classe de Armadura</p>
+              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+                <LexiconText text="Classe de Armadura" />
+              </p>
               <p className="font-['Space_Grotesk'] text-4xl font-black">{character.stats.armorClass}</p>
             </div>
           </div>
@@ -69,7 +74,9 @@ export default function StatsTab({ character }) {
               <span className="material-symbols-outlined text-green-700 text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
             </div>
             <div>
-              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-green-700 uppercase">Iniciativa</p>
+              <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.2em] text-green-700 uppercase">
+                <LexiconText text="Iniciativa" />
+              </p>
               <p className="font-['Space_Grotesk'] text-4xl font-black">{getMod(character.attributes.dex)}</p>
             </div>
           </div>
@@ -86,10 +93,14 @@ export default function StatsTab({ character }) {
             return (
               <div key={key} className="bg-surface-container p-4 border-l-2 border-sheet-accent rounded-r">
                 <div className="flex justify-between items-start mb-1">
-                  <p className="text-[9px] font-black text-sheet-accent uppercase tracking-widest">{badge.name}</p>
+                  <p className="text-[9px] font-black text-sheet-accent uppercase tracking-widest">
+                    <LexiconText text={badge.name} />
+                  </p>
                   <div className="flex items-center gap-1.5">
                     <div className={`w-2 h-2 rounded-full border border-sheet-accent/50 ${isProficient ? 'bg-sheet-accent' : 'bg-transparent'}`}></div>
-                    <span className="text-[8px] font-bold text-sheet-accent opacity-30">RESISTÊNCIA</span>
+                    <span className="text-[8px] font-bold text-sheet-accent opacity-30">
+                      <LexiconText text="Resistência" />
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-baseline gap-2 mt-2">
@@ -143,7 +154,9 @@ export default function StatsTab({ character }) {
                     )}
 
                     <span className="text-[10px] font-black tracking-widest uppercase min-w-0">
-                      <span className={nameClass}>{skill.name}</span>
+                      <span className={nameClass}>
+                        <LexiconText text={skill.name} />
+                      </span>
                       {' '}
                       <span className={`font-bold ml-1 ${abilityClass}`}>({ptAbilityLabel})</span>
                     </span>

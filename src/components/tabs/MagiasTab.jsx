@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Sparkle } from 'lucide-react';
+import LexiconText from '../lexicon/LexiconText';
 import {
   getSpellcastingInfo,
   getCharacterGrimoire,
@@ -601,14 +602,15 @@ function SpellCard({ spell, showPrepareToggle, isPrepared, isAlwaysPrepared, isT
               </p>
             )}
             {spell.desc && (
-              <p className="text-xs text-on-surface-variant/70 leading-relaxed whitespace-pre-wrap">
-                {spell.desc}
-              </p>
+              <div className="text-xs text-on-surface-variant/70 leading-relaxed">
+                <LexiconText text={spell.desc} excludeEntryId={`spell-${spell.id}`} />
+              </div>
             )}
             {spell.higher_level && (
-              <p className="text-xs text-on-surface-variant/50 mt-2 italic">
-                <span className="font-bold text-on-surface-variant/70">Em Níveis Superiores:</span> {spell.higher_level}
-              </p>
+              <div className="text-xs text-on-surface-variant/50 mt-2 italic">
+                <span className="font-bold text-on-surface-variant/70">Em Níveis Superiores: </span>
+                <LexiconText text={spell.higher_level} />
+              </div>
             )}
           </div>
         )}

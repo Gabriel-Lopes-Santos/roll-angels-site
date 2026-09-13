@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCharacterProfile, updateAvatar, uploadAvatarFile, supabase, getUnreadNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/supabaseClient';
 import { DEFAULT_SHEET_ACCENT, getSheetAccentFromUser } from '../lib/sheetTheme';
-import { Loader2, ArrowLeft, Image as ImageIcon, Trash2, Check, X, User } from 'lucide-react';
+import { Loader2, ArrowLeft, Image as ImageIcon, Trash2, Check, X, User, BookOpen } from 'lucide-react';
 import StatsTab from './tabs/StatsTab';
 import ClasseTab from './tabs/ClasseTab';
 import InventarioTab from './tabs/InventarioTab';
@@ -13,13 +13,16 @@ import SheetThemeSettingsModal from './SheetThemeSettingsModal';
 import SiteSettingsDropdown from './SiteSettingsDropdown';
 import LevelUpWizardModal from './LevelUpWizardModal';
 import { XP_THRESHOLDS, canLevelUp } from '../lib/levelProgression';
+import { useLexicon } from '../context/LexiconContext';
 
 export default function CharacterSheet() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { openCompendium } = useLexicon();
   const [character, setCharacter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('status');
+
 
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -275,6 +278,16 @@ export default function CharacterSheet() {
           </div>
 
           <div className="flex items-center gap-3 text-neutral-400">
+            {/* Botão de Acesso Rápido ao Compêndio / Wiki */}
+            <button
+              type="button"
+              onClick={() => openCompendium()}
+              className="hover:text-sheet-accent transition-colors flex items-center justify-center rounded-full p-1 min-w-[36px] min-h-[36px]"
+              title="Abrir Compêndio e Regras (Ctrl+K)"
+            >
+              <BookOpen className="w-5 h-5 text-sheet-accent" />
+            </button>
+
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
@@ -383,6 +396,21 @@ export default function CharacterSheet() {
             )
           })}
         </nav>
+
+        {/* Atalho do Compêndio no rodapé da Sidebar */}
+        <div className="p-4 border-t border-white/5">
+          <button
+            type="button"
+            onClick={() => openCompendium()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-container hover:bg-sheet-accent/15 text-on-surface-variant hover:text-sheet-accent transition-all text-xs font-['Space_Grotesk'] font-bold uppercase tracking-wider border border-white/5 group"
+          >
+            <BookOpen className="w-4 h-4 text-sheet-accent group-hover:scale-110 transition-transform" />
+            <span>Compêndio</span>
+            <span className="ml-auto text-[10px] font-mono text-on-surface-variant/40 px-1 py-0.5 bg-white/5 rounded border border-white/5">
+              Ctrl+K
+            </span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

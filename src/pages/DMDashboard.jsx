@@ -26,6 +26,7 @@ import {
 } from '../lib/supabaseClient';
 import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map, ChevronRight } from 'lucide-react';
 import PiNoKyoChat from '../components/PiNoKyoChat';
+import LexiconText from '../components/lexicon/LexiconText';
 
 const ATTR_BR = {
   str: { label: 'FOR', color: 'text-emerald-400' },
@@ -641,16 +642,16 @@ export default function DMDashboard() {
                     <div className="flex flex-wrap gap-2 text-sm text-neutral-300">
                       {selectedReq.character_data.skills
                         ? selectedReq.character_data.skills.split(', ').map((skill, idx) => (
-                          <span key={idx} className="bg-neutral-900 border border-neutral-700 px-3 py-1 rounded-full">{skill}</span>
+                          <span key={idx} className="bg-neutral-900 border border-neutral-700 px-3 py-1 rounded-full"><LexiconText text={skill} /></span>
                         ))
                         : 'Nenhuma selecionada'}
                     </div>
                   </div>
                   <div>
                     <h3 className="text-sm uppercase tracking-wider text-neutral-500 mb-2 border-b border-neutral-800 pb-1">Notas, Magias & Sub-Classes</h3>
-                    <p className="text-sm text-neutral-300 whitespace-pre-wrap bg-neutral-950 p-3 rounded-lg border border-neutral-800">
-                      {selectedReq.character_data.notes || 'Nada reportado.'}
-                    </p>
+                    <div className="text-sm text-neutral-300 whitespace-pre-wrap bg-neutral-950 p-3 rounded-lg border border-neutral-800">
+                      <LexiconText text={selectedReq.character_data.notes || 'Nada reportado.'} />
+                    </div>
                   </div>
                 </div>
 
@@ -794,7 +795,9 @@ export default function DMDashboard() {
                       {d.notes && (
                         <div>
                           <h3 className="text-xs uppercase tracking-wider text-neutral-500 mb-2 border-b border-neutral-800 pb-1">Notas</h3>
-                          <p className="text-sm text-neutral-300 whitespace-pre-wrap bg-neutral-950 p-3 rounded-lg border border-neutral-800">{d.notes}</p>
+                          <div className="text-sm text-neutral-300 whitespace-pre-wrap bg-neutral-950 p-3 rounded-lg border border-neutral-800">
+                            <LexiconText text={d.notes} />
+                          </div>
                         </div>
                       )}
 

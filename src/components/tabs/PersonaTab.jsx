@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getCharacterAppearance, upsertCharacterAppearance } from '../../lib/supabaseClient';
 import { Loader2, Save, Check, Lightbulb, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getFilteredSuggestions } from '../../lib/personaSuggestions';
+import LexiconText from '../lexicon/LexiconText';
 
 const fieldGroups = [
   {
@@ -235,7 +236,7 @@ export default function PersonaTab({ character }) {
                               onClick={() => handleSuggestionClick(field.key, sug)}
                               className="w-full text-left p-3 text-sm text-on-surface hover:text-sky-100 hover:bg-sky-500/20 rounded transition-colors leading-relaxed"
                             >
-                              {sug}
+                              <LexiconText text={sug} />
                             </button>
                           </li>
                         ))}

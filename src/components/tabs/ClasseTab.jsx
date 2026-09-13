@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle, GitBranch, Lock, Sparkles, Loader2, MousePointerClick, Table2, ChevronDown, ChevronUp, Swords, Shield, Zap, Check, X, Plus } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import LexiconText from '../lexicon/LexiconText';
 
 const levelSort = (a, b) => {
   const left = a.level ?? Number.MAX_SAFE_INTEGER;
@@ -151,9 +152,9 @@ function FeatureCard({ feature, unlocked, variant = 'class' }) {
         )}
       </div>
       {feature.description && (
-        <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-          {feature.description}
-        </p>
+        <div className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+          <LexiconText text={feature.description} />
+        </div>
       )}
     </div>
   );
@@ -182,9 +183,9 @@ function OptionCard({ option, isChosen, isSelecting, onSelect, disabled, canChoo
             {option.name_pt || option.name}
           </h5>
           {option.summary && (
-            <p className="mt-2 text-xs leading-relaxed text-on-surface-variant">
-              {option.summary}
-            </p>
+            <div className="mt-2 text-xs leading-relaxed text-on-surface-variant">
+              <LexiconText text={option.summary} />
+            </div>
           )}
         </div>
         <div className="shrink-0">

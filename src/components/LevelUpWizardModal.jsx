@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { XP_THRESHOLDS, canLevelUp, CLASS_HIT_DICE, MULTICLASS_REQUIREMENTS, getProficiencyBonus } from '../lib/levelProgression';
 import { Loader2, X, ChevronRight, Check, Dices, List, Sparkles, BookOpen, Star, Beaker, Zap } from 'lucide-react';
+import LexiconText from './lexicon/LexiconText';
 
 // Tabbed Layout Wizard
 export default function LevelUpWizardModal({ character, onClose, onComplete }) {
@@ -497,8 +498,8 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                     <ul className="space-y-4">
                       {features.filter(f => f.rules_json?.type !== 'subclass_unlock' && f.rules_json?.type !== 'subclass_selection' && f.rules_json?.choice_kind !== 'asi_or_feat').map(f => (
                         <li key={f.id} className="border-l-2 border-sheet-accent pl-4">
-                          <span className="block font-bold text-sm text-white mb-1">{f.name_pt || f.name}</span>
-                          <span className="block text-xs text-neutral-400">{f.summary}</span>
+                          <span className="block font-bold text-sm text-white mb-1"><LexiconText text={f.name_pt || f.name} /></span>
+                          <span className="block text-xs text-neutral-400"><LexiconText text={f.summary} /></span>
                         </li>
                       ))}
                     </ul>
@@ -534,8 +535,8 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                          <ul className="space-y-4">
                            {previewSubclassFeatures.map(f => (
                              <li key={f.id} className="border-l-2 border-cyan-500 pl-4">
-                               <span className="block font-bold text-sm text-white mb-1">{f.name_pt || f.name}</span>
-                               <span className="block text-xs text-neutral-400">{f.summary}</span>
+                               <span className="block font-bold text-sm text-white mb-1"><LexiconText text={f.name_pt || f.name} /></span>
+                               <span className="block text-xs text-neutral-400"><LexiconText text={f.summary} /></span>
                              </li>
                            ))}
                          </ul>
@@ -555,7 +556,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                                <div className="flex flex-wrap gap-2">
                                  {previewSubclassSpells.filter(s => s.level === lvl).map(spell => (
                                    <span key={spell.id} className="bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-2 py-1 rounded text-xs font-bold">
-                                     {spell.name_pt || spell.name}
+                                     <LexiconText text={spell.name_pt || spell.name} />
                                    </span>
                                  ))}
                                </div>
@@ -590,7 +591,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                         return (
                           <button key={spell.id} onClick={() => toggleSpellPick(spell, true)} className={`text-left p-3 rounded-xl border transition-all flex flex-col ${isSel ? 'bg-blue-500/20 border-blue-400' : 'bg-black/40 border-white/5 hover:bg-white/10'}`}>
                             <span className="font-bold text-sm text-white">{spell.name_pt || spell.name}</span>
-                            <span className="text-[10px] text-neutral-500 mt-1 line-clamp-2">{spell.desc}</span>
+                            <span className="text-[10px] text-neutral-500 mt-1 line-clamp-2"><LexiconText text={spell.desc} /></span>
                           </button>
                         );
                       })}
@@ -615,7 +616,7 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                               <span className="font-bold text-sm text-white">{spell.name_pt || spell.name}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded bg-black/60 text-purple-300">Nível {spell.level}</span>
                             </div>
-                            <span className="text-[10px] text-neutral-500 mt-1 line-clamp-2">{spell.desc}</span>
+                            <span className="text-[10px] text-neutral-500 mt-1 line-clamp-2"><LexiconText text={spell.desc} /></span>
                           </button>
                         );
                       })}
@@ -660,16 +661,23 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                     )}
 
                     {asiType === 'feat' && (
-                      <select 
-                        value={selectedFeatId} 
-                        onChange={(e) => setSelectedFeatId(e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white font-bold focus:outline-none focus:border-amber-400"
-                      >
-                        <option value="">-- Selecione o Talento --</option>
-                        {feats.map(f => (
-                          <option key={f.id} value={f.id}>{f.name_pt || f.name}</option>
-                        ))}
-                      </select>
+                      <>
+                        <select 
+                          value={selectedFeatId} 
+                          onChange={(e) => setSelectedFeatId(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white font-bold focus:outline-none focus:border-amber-400"
+                        >
+                          <option value="">-- Selecione o Talento --</option>
+                          {feats.map(f => (
+                            <option key={f.id} value={f.id}>{f.name_pt || f.name}</option>
+                          ))}
+                        </select>
+                        {selectedFeatId && feats.find(f => f.id === selectedFeatId)?.desc && (
+                          <div className="mt-4 p-4 rounded-xl bg-black/40 border border-white/5 text-xs text-neutral-300 leading-relaxed">
+                            <LexiconText text={feats.find(f => f.id === selectedFeatId).desc} />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -701,8 +709,8 @@ export default function LevelUpWizardModal({ character, onClose, onComplete }) {
                             onClick={() => togglePick(opt.id)}
                             className={`p-4 text-left rounded-xl transition-all border flex flex-col ${currentPicks.includes(opt.id) ? 'bg-sheet-accent/20 border-sheet-accent' : 'bg-black/40 border-white/5 hover:bg-white/10'}`}
                           >
-                            <span className="block font-bold text-sm text-neutral-100">{opt.name_pt || opt.name}</span>
-                            <span className="block text-[11px] text-neutral-400 mt-1 leading-relaxed">{opt.summary}</span>
+                            <span className="block font-bold text-sm text-neutral-100"><LexiconText text={opt.name_pt || opt.name} /></span>
+                            <span className="block text-[11px] text-neutral-400 mt-1 leading-relaxed"><LexiconText text={opt.summary} /></span>
                           </button>
                         ))}
                       </div>

@@ -1,4 +1,5 @@
 import { Dices } from 'lucide-react';
+import LexiconText from '../lexicon/LexiconText';
 
 // Helper D&D Modificador
 const getMod = (score) => {
@@ -36,7 +37,7 @@ export default function AtributosTab({ character }) {
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-fantasy-gold)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             
             <span className="text-xs md:text-sm uppercase tracking-widest text-gray-400 group-hover:text-[var(--color-fantasy-gold)] transition-colors mb-2">
-              {attrNames[key]}
+              <LexiconText text={attrNames[key]} />
             </span>
             
             {/* Display do Atributo Base */}
@@ -53,7 +54,7 @@ export default function AtributosTab({ character }) {
       </div>
 
       <div className="mt-8 p-4 border border-gray-800 rounded-lg bg-black/20 text-sm text-gray-400 text-center">
-        O modificador é somado as suas rolagens de d20 para atacar, resistir ou realizar testes relacionados ao atributo.
+        <LexiconText text="O modificador é somado as suas rolagens de d20 para atacar, resistir ou realizar testes relacionados ao atributo." />
       </div>
 
     </div>

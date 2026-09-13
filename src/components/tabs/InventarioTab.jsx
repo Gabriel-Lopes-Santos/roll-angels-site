@@ -1,4 +1,5 @@
 import { Coins, CircleDollarSign, CirclePlay, Backpack, PackageOpen } from 'lucide-react';
+import LexiconText from '../lexicon/LexiconText';
 
 export default function InventarioTab({ character }) {
   const { inventory } = character;
@@ -61,9 +62,11 @@ export default function InventarioTab({ character }) {
                 <li key={item.id} className="p-4 flex items-center justify-between hover:bg-gray-800/40 transition-colors group">
                   <div className="flex-1">
                     <h4 className="text-white font-medium group-hover:text-[var(--color-fantasy-gold)] transition-colors">
-                      {item.name}
+                      <LexiconText text={item.name} />
                     </h4>
-                    <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                    <div className="text-sm text-gray-400 mt-1">
+                      <LexiconText text={item.description} />
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 text-right">
                     <span className="text-xs px-2 py-1 bg-gray-800 text-gray-300 rounded uppercase tracking-wider hidden md:block">

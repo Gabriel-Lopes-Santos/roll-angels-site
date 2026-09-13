@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import LexiconText from '../lexicon/LexiconText';
 import {
   getCharLogEntries,
   createLogEntry,
@@ -280,9 +281,9 @@ export default function LogTab({ character }) {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
-                    {entry.content}
-                  </p>
+                  <div className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
+                    <LexiconText text={entry.content} />
+                  </div>
                 )}
 
                 {/* Ações (visíveis no hover) */}
