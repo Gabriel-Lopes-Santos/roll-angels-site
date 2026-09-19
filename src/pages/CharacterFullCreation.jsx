@@ -13,7 +13,7 @@ import {
   getFullCreationRequest,
   submitFullCreationRequest,
 } from '../lib/supabaseClient';
-import { Loader2, Save, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Save, ChevronLeft, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import Combobox from '../components/Combobox';
 
 const ALIGNMENTS = [
@@ -341,6 +341,31 @@ export default function CharacterFullCreation() {
             Preencha todos os dados do seu personagem. Ao finalizar, envie para o Mestre revisar e aprovar.
           </p>
         </header>
+
+        {/* Banner de Ficha Devolvida */}
+        {request && request.status === 'rejected' && (
+          <div className="mb-6 p-5 bg-gradient-to-r from-amber-950/40 via-neutral-900/80 to-neutral-900 border border-amber-500/40 rounded-2xl flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+              <RotateCcw className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h3 className="font-bold text-white text-base">Ficha Devolvida pelo Mestre para Ajustes</h3>
+                <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Devolvida</span>
+              </div>
+              <p className="text-neutral-300 text-sm">
+                {request.dm_notes ? (
+                  <><strong>Observações do Mestre:</strong> <span className="italic text-amber-200/90 font-medium">“{request.dm_notes}”</span></>
+                ) : (
+                  'O Mestre devolveu esta ficha para que você faça ajustes antes de reenviar para aprovação.'
+                )}
+              </p>
+              <p className="text-xs text-neutral-400 mt-2">
+                Todos os dados preenchidos anteriormente foram preservados abaixo. Ajuste o que for necessário e clique em "Reenviar Ficha ao Mestre".
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -733,7 +758,7 @@ export default function CharacterFullCreation() {
               className="flex items-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-emerald-900/30 text-sm uppercase tracking-wider"
             >
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              Enviar para o Mestre
+              {request?.status === 'rejected' ? 'Reenviar Ficha ao Mestre' : 'Enviar para o Mestre'}
             </button>
           </div>
 

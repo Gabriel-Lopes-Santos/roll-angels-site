@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   supabase, 
   getClassesList, 
   getRacesList, 
   getBackgroundsList, 
   createCharacterRequest,
+  updateCharacterRequest,
+  getCharacterCreationRequest,
   getSubRacesList,
   getSkillsList,
   getClassProficiencies,
@@ -13,7 +15,7 @@ import {
   getRaceProficiencies,
   getSubclassesList
 } from '../lib/supabaseClient';
-import { Loader2, Dices, Save, ChevronLeft } from 'lucide-react';
+import { Loader2, Dices, Save, ChevronLeft, RotateCcw } from 'lucide-react';
 import Combobox from '../components/Combobox';
 
 // Mapeamento de atributos para PT-BR
@@ -36,6 +38,10 @@ const ALIGNMENTS = [
 
 export default function CharacterCreationRequest() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestId = searchParams.get('requestId');
+  const [existingRequest, setExistingRequest] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState(null);
@@ -98,10 +104,43 @@ export default function CharacterCreationRequest() {
         skills: sRes.data || []
       });
 
+      if (requestId) {
+        const { data: reqData } = await getCharacterCreationRequest(requestId);
+        if (reqData && reqData.user_id === session.user.id && reqData.character_data) {
+          setExistingRequest(reqData);
+          const cd = reqData.character_data;
+          setFormData({
+            name: cd.name || '',
+            race: cd.race_id || '',
+            sub_race: cd.sub_race_id || '',
+            class: cd.class_id || '',
+            subclass: cd.subclass_id || '',
+            background: cd.background_id || '',
+            alignment: cd.alignment || 'TN',
+            attributes: cd.raw_attributes || {
+              for: cd.attributes?.str ?? null,
+              des: cd.attributes?.dex ?? null,
+              con: cd.attributes?.con ?? null,
+              int: cd.attributes?.int ?? null,
+              sab: cd.attributes?.wis ?? null,
+              car: cd.attributes?.cha ?? null,
+            },
+            skills: cd.skill_ids || [],
+            notes: cd.notes || '',
+          });
+
+          if (cd.rolled_stats && Array.isArray(cd.rolled_stats) && cd.rolled_stats.length > 0) {
+            setRollHistory([cd.rolled_stats]);
+            setActiveRollIndex(0);
+            setRolls(cd.rolled_stats.map((val, idx) => ({ id: idx, val, used: true })));
+          }
+        }
+      }
+
       setLoading(false);
     };
     init();
-  }, [navigate]);
+  }, [navigate, requestId]);
 
   // Handle Race/SubRace Change
   useEffect(() => {
@@ -454,16 +493,24 @@ export default function CharacterCreationRequest() {
       skills: skillsNames,
       skill_ids: formData.skills,
       notes: formData.notes,
+      raw_attributes: formData.attributes,
       roll_count: rollHistory.length,
       rolled_stats: rollHistory[activeRollIndex] || []
     };
 
-    const { error } = await createCharacterRequest(user.id, finalData);
+    let resultError = null;
+    if (existingRequest && existingRequest.id) {
+      const { error } = await updateCharacterRequest(existingRequest.id, finalData);
+      resultError = error;
+    } else {
+      const { error } = await createCharacterRequest(user.id, finalData);
+      resultError = error;
+    }
     
     setSubmitting(false);
 
-    if (error) {
-      alert("Erro ao enviar: " + error);
+    if (resultError) {
+      alert("Erro ao enviar: " + resultError);
     } else {
       navigate('/selecao'); 
     }
@@ -488,11 +535,40 @@ export default function CharacterCreationRequest() {
           >
             <ChevronLeft className="w-4 h-4" /> Voltar
           </button>
-          <h1 className="text-3xl font-bold font-serif text-white tracking-tight">Criar Personagem (Nível 1)</h1>
+          <h1 className="text-3xl font-bold font-serif text-white tracking-tight">
+            {existingRequest ? 'Editar Personagem (Nível 1)' : 'Criar Personagem (Nível 1)'}
+          </h1>
           <p className="text-neutral-400 mt-2">
-            Preencha sua ficha, role seus atributos e envie para os deuses (o Mestre) avaliarem.
+            {existingRequest 
+              ? 'Ajuste os dados da sua ficha conforme as orientações do Mestre e reenvie para aprovação.'
+              : 'Preencha sua ficha, role seus atributos e envie para os deuses (o Mestre) avaliarem.'}
           </p>
         </header>
+
+        {/* Banner de Ficha Devolvida */}
+        {existingRequest && existingRequest.status === 'rejected' && (
+          <div className="mb-6 p-5 bg-gradient-to-r from-amber-950/40 via-neutral-900/80 to-neutral-900 border border-amber-500/40 rounded-2xl flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+              <RotateCcw className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h3 className="font-bold text-white text-base">Ficha Devolvida pelo Mestre para Ajustes</h3>
+                <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Devolvida</span>
+              </div>
+              <p className="text-neutral-300 text-sm">
+                {existingRequest.dm_notes ? (
+                  <><strong>Observações do Mestre:</strong> <span className="italic text-amber-200/90 font-medium">“{existingRequest.dm_notes}”</span></>
+                ) : (
+                  'O Mestre devolveu esta ficha para que você faça ajustes antes de reenviar para aprovação.'
+                )}
+              </p>
+              <p className="text-xs text-neutral-400 mt-2">
+                Seus dados anteriores foram restaurados abaixo. Altere o que for necessário e clique em "Reenviar Ficha ao Mestre".
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8 bg-neutral-900/40 p-6 sm:p-8 rounded-2xl border border-neutral-800">
           
@@ -814,7 +890,7 @@ export default function CharacterCreationRequest() {
               className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
             >
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              Enviar para o Mestre
+              {existingRequest ? 'Reenviar Ficha ao Mestre' : 'Enviar para o Mestre'}
             </button>
           </div>
 

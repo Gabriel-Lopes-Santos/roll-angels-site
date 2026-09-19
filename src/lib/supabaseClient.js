@@ -624,12 +624,61 @@ export async function getAllPendingRequests() {
   }
 }
 
-export async function updateRequestStatus(requestId, newStatus) {
+export async function updateRequestStatus(requestId, newStatus, dmNotes = null) {
+  try {
+    const update = { status: newStatus, updated_at: new Date().toISOString() };
+    if (dmNotes !== null) update.dm_notes = dmNotes;
+    const { data, error } = await supabase
+      .from('char_creation_requests')
+      .update(update)
+      .eq('id', requestId);
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getUserLatestCreationRequest(userId) {
   try {
     const { data, error } = await supabase
       .from('char_creation_requests')
-      .update({ status: newStatus })
-      .eq('id', requestId);
+      .select('*')
+      .eq('user_id', userId)
+      .in('status', ['pending', 'rejected'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getCharacterCreationRequest(requestId) {
+  try {
+    const { data, error } = await supabase
+      .from('char_creation_requests')
+      .select('*')
+      .eq('id', requestId)
+      .maybeSingle();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function updateCharacterRequest(requestId, characterData) {
+  try {
+    const { data, error } = await supabase
+      .from('char_creation_requests')
+      .update({
+        character_data: characterData,
+        status: 'pending',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .select()
+      .maybeSingle();
     return { data, error };
   } catch (err) {
     return { data: null, error: err.message };
@@ -704,7 +753,8 @@ export async function getUserAwaitingFullRequests(userId) {
       .from('char_full_creation_requests')
       .select('*')
       .eq('target_user_id', userId)
-      .eq('status', 'awaiting_user');
+      .in('status', ['awaiting_user', 'rejected', 'pending_review'])
+      .order('updated_at', { ascending: false });
     return { data: data || [], error };
   } catch (err) {
     return { data: [], error: err.message };

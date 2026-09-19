@@ -24,7 +24,7 @@ import {
   endSession,
   getSessionHistory,
 } from '../lib/supabaseClient';
-import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map, ChevronRight } from 'lucide-react';
+import { Loader2, Shield, Check, X, User, UserPlus, ScrollText, Play, Square, Clock, Users, Plus, Trash2, Book, Map, ChevronRight, RotateCcw } from 'lucide-react';
 import PiNoKyoChat from '../components/PiNoKyoChat';
 
 const ATTR_BR = {
@@ -51,6 +51,10 @@ export default function DMDashboard() {
 
   // DM action states
   const [processing, setProcessing] = useState(false);
+
+  // Devolver/Recusar modal state
+  const [rejectModalData, setRejectModalData] = useState(null); // { req, type: 'level1' | 'full' }
+  const [rejectNotes, setRejectNotes] = useState('');
 
   // User selection modal
   const [showUserModal, setShowUserModal] = useState(false);
@@ -362,12 +366,30 @@ export default function DMDashboard() {
     setProcessing(false);
   };
 
-  const handleReject = async (req) => {
-    if (!window.confirm("Rejeitar esta solicitação?")) return;
+  const handleOpenRejectModal = (req, type) => {
+    setRejectNotes('');
+    setRejectModalData({ req, type });
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectModalData) return;
     setProcessing(true);
-    await updateRequestStatus(req.id, 'rejected');
-    setSelectedReq(null);
-    await loadAllRequests();
+    const { req, type } = rejectModalData;
+    const notes = rejectNotes.trim() || null;
+
+    try {
+      if (type === 'level1') {
+        await updateRequestStatus(req.id, 'rejected', notes);
+        setSelectedReq(null);
+      } else {
+        await updateFullRequestStatus(req.id, 'rejected', notes);
+        setSelectedFullReq(null);
+      }
+      setRejectModalData(null);
+      await loadAllRequests();
+    } catch (err) {
+      alert("Erro ao devolver solicitação: " + err.message);
+    }
     setProcessing(false);
   };
 
@@ -402,15 +424,6 @@ export default function DMDashboard() {
     } else {
       alert('Erro ao criar ficha: ' + result.error);
     }
-    setProcessing(false);
-  };
-
-  const handleRejectFullReq = async (req) => {
-    if (!window.confirm("Rejeitar esta solicitação completa?")) return;
-    setProcessing(true);
-    await updateFullRequestStatus(req.id, 'rejected');
-    setSelectedFullReq(null);
-    await loadAllRequests();
     setProcessing(false);
   };
 
@@ -660,10 +673,10 @@ export default function DMDashboard() {
                     {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                     Aprovar & Criar Ficha
                   </button>
-                  <button onClick={() => handleReject(selectedReq)} disabled={processing}
-                    className="px-6 flex items-center justify-center gap-2 bg-red-900/20 text-red-500 hover:bg-red-900/40 font-medium py-3 rounded-xl transition-colors disabled:opacity-50 border border-red-900/50">
-                    {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <X className="w-5 h-5" />}
-                    Rejeitar
+                  <button onClick={() => handleOpenRejectModal(selectedReq, 'level1')} disabled={processing}
+                    className="px-6 flex items-center justify-center gap-2 bg-amber-900/20 text-amber-400 hover:bg-amber-900/40 font-medium py-3 rounded-xl transition-colors disabled:opacity-50 border border-amber-900/50">
+                    <RotateCcw className="w-5 h-5" />
+                    Recusar / Devolver
                   </button>
                 </div>
               </div>
@@ -805,10 +818,10 @@ export default function DMDashboard() {
                           {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                           Aprovar & Criar Ficha
                         </button>
-                        <button onClick={() => handleRejectFullReq(selectedFullReq)} disabled={processing}
-                          className="px-6 flex items-center justify-center gap-2 bg-red-900/20 text-red-500 hover:bg-red-900/40 font-medium py-3 rounded-xl transition-colors disabled:opacity-50 border border-red-900/50">
-                          {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <X className="w-5 h-5" />}
-                          Rejeitar
+                        <button onClick={() => handleOpenRejectModal(selectedFullReq, 'full')} disabled={processing}
+                          className="px-6 flex items-center justify-center gap-2 bg-amber-900/20 text-amber-400 hover:bg-amber-900/40 font-medium py-3 rounded-xl transition-colors disabled:opacity-50 border border-amber-900/50">
+                          <RotateCcw className="w-5 h-5" />
+                          Recusar / Devolver
                         </button>
                       </div>
                     </div>
@@ -1225,6 +1238,52 @@ export default function DMDashboard() {
           </div>
         </div>
       )}
+
+      {/* ═══ REJECT / RETURN MODAL ═══ */}
+      {rejectModalData && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-amber-400" />
+              Devolver Ficha ao Jogador
+            </h3>
+            <p className="text-sm text-neutral-400 mb-4 leading-relaxed">
+              A ficha de <strong className="text-white">{rejectModalData.req?.character_data?.name || 'Aventureiro'}</strong> voltará para a tela do jogador com todos os dados salvos. Ele poderá ver suas anotações, realizar os ajustes necessários e reenviar a ficha para aprovação.
+            </p>
+            <div className="space-y-2 mb-6">
+              <label className="block text-xs uppercase tracking-wider text-neutral-400 font-semibold">
+                Motivo / Orientações para o Jogador (Opcional)
+              </label>
+              <textarea
+                value={rejectNotes}
+                onChange={e => setRejectNotes(e.target.value)}
+                placeholder="Ex: Ajuste a distribuição dos atributos para respeitar a pontuação padrão, ou escolha outra perícia da classe..."
+                rows={4}
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none placeholder-neutral-600"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleConfirmReject}
+                disabled={processing}
+                className="flex-1 flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                Confirmar Devolução
+              </button>
+              <button
+                onClick={() => setRejectModalData(null)}
+                disabled={processing}
+                className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <PiNoKyoChat role="dm" />
     </div>
   );

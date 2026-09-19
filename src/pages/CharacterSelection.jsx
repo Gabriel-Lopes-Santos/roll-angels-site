@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getUserCharacters, signOut, getUserPendingRequest, getUserAwaitingFullRequests, isCurrentUserDM, getActiveSession } from '../lib/supabaseClient';
-import { LogOut, User, Shield, Loader2, PlusCircle, Clock, ScrollText, Map } from 'lucide-react';
+import { 
+  supabase, 
+  getUserCharacters, 
+  signOut, 
+  getUserLatestCreationRequest, 
+  getUserAwaitingFullRequests, 
+  isCurrentUserDM, 
+  getActiveSession 
+} from '../lib/supabaseClient';
+import { LogOut, User, Shield, Loader2, PlusCircle, Clock, ScrollText, Map, RotateCcw } from 'lucide-react';
 
 export default function CharacterSelection() {
   const navigate = useNavigate();
   const [characters, setCharacters] = useState([]);
-  const [pendingRequest, setPendingRequest] = useState(null);
+  const [creationRequest, setCreationRequest] = useState(null);
   const [fullCreationRequests, setFullCreationRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -26,7 +34,7 @@ export default function CharacterSelection() {
       
       const [charsResult, requestResult, fullReqsResult, dmStatus, sessionResult] = await Promise.all([
         getUserCharacters(session.user.id),
-        getUserPendingRequest(session.user.id),
+        getUserLatestCreationRequest(session.user.id),
         getUserAwaitingFullRequests(session.user.id),
         isCurrentUserDM(),
         getActiveSession(),
@@ -36,7 +44,7 @@ export default function CharacterSelection() {
         setCharacters(charsResult.data);
       }
 
-      setPendingRequest(requestResult.data);
+      setCreationRequest(requestResult.data);
       setFullCreationRequests(fullReqsResult.data || []);
       setIsDM(dmStatus);
       setActiveSession(sessionResult.data || null);
@@ -99,32 +107,145 @@ export default function CharacterSelection() {
         {/* DM Full Creation Request Banners */}
         {fullCreationRequests.length > 0 && (
           <div className="space-y-3 mb-8">
-            {fullCreationRequests.map(req => (
-              <div key={req.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-purple-900/20 to-neutral-900/60 border border-purple-500/30 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500"
-              >
+            {fullCreationRequests.map(req => {
+              if (req.status === 'rejected') {
+                return (
+                  <div key={req.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-amber-950/40 via-neutral-900/80 to-neutral-900 border border-amber-500/40 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                        <RotateCcw className="w-6 h-6 text-amber-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-white text-base">Ficha Devolvida pelo Mestre: {req.character_data?.name || 'Personagem'}</h3>
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Ajustes Solicitados</span>
+                        </div>
+                        <p className="text-neutral-300 text-sm mt-1">
+                          {req.dm_notes ? (
+                            <span className="italic text-amber-200/90 font-medium">“{req.dm_notes}”</span>
+                          ) : (
+                            'O Mestre devolveu sua ficha para que você faça ajustes antes da aprovação.'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/criacao-completa/${req.id}`)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-900/30 text-sm whitespace-nowrap"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Corrigir Ficha
+                    </button>
+                  </div>
+                );
+              }
+
+              if (req.status === 'pending_review') {
+                return (
+                  <div key={req.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-yellow-950/20 to-neutral-900/60 border border-yellow-500/30 rounded-2xl"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                        <Clock className="w-6 h-6 text-yellow-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base">Ficha Completa em Análise: {req.character_data?.name || 'Personagem'}</h3>
+                        <p className="text-neutral-400 text-sm mt-0.5">
+                          O Mestre está revisando sua ficha completa. Aguarde a aprovação final para entrar na mesa.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-medium">
+                      Status: Em Análise
+                    </div>
+                  </div>
+                );
+              }
+
+              // Status 'awaiting_user'
+              return (
+                <div key={req.id}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-purple-900/20 to-neutral-900/60 border border-purple-500/30 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                      <ScrollText className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-base">O Mestre convoca você!</h3>
+                      <p className="text-neutral-400 text-sm mt-0.5">
+                        Registre seu personagem completo preenchendo a ficha solicitada pelo Mestre.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/criacao-completa/${req.id}`)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-900/30 text-sm whitespace-nowrap"
+                  >
+                    <ScrollText className="w-4 h-4" />
+                    Preencher Ficha
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Level 1 Creation Request Banners (when user has existing characters) */}
+        {creationRequest && characters.length > 0 && (
+          <div className="mb-8">
+            {creationRequest.status === 'rejected' ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-amber-950/40 via-neutral-900/80 to-neutral-900 border border-amber-500/40 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-                    <ScrollText className="w-6 h-6 text-purple-400" />
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+                    <RotateCcw className="w-6 h-6 text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white text-base">O Mestre convoca você!</h3>
-                    <p className="text-neutral-400 text-sm mt-0.5">
-                      Registre seu personagem completo preenchendo a ficha solicitada pelo Mestre.
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-white text-base">Ficha Devolvida pelo Mestre: {creationRequest.character_data?.name || 'Aventureiro'}</h3>
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Ajustes Solicitados</span>
+                    </div>
+                    <p className="text-neutral-300 text-sm mt-1">
+                      {creationRequest.dm_notes ? (
+                        <span className="italic text-amber-200/90 font-medium">“{creationRequest.dm_notes}”</span>
+                      ) : (
+                        'O Mestre devolveu sua ficha de nível 1 para que você faça ajustes e reenvie.'
+                      )}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/criacao-completa/${req.id}`)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-900/30 text-sm whitespace-nowrap"
+                  onClick={() => navigate(`/criacao?requestId=${creationRequest.id}`)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-900/30 text-sm whitespace-nowrap"
                 >
-                  <ScrollText className="w-4 h-4" />
-                  Preencher Ficha
+                  <RotateCcw className="w-4 h-4" />
+                  Corrigir e Reenviar
                 </button>
               </div>
-            ))}
+            ) : creationRequest.status === 'pending' ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gradient-to-r from-yellow-950/20 to-neutral-900/60 border border-yellow-500/30 rounded-2xl">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                    <Clock className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">Solicitação Nível 1 em Análise: {creationRequest.character_data?.name || 'Aventureiro'}</h3>
+                    <p className="text-neutral-400 text-sm mt-0.5">
+                      Os deuses (O Mestre) estão analisando sua ficha. Aguarde a aprovação celestial para adentrar na guilda.
+                    </p>
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-medium">
+                  Status: Pendente
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
+
         {/* Active Session — VTT Banner */}
         {activeSession && (
           <div className="mb-8">
@@ -157,12 +278,33 @@ export default function CharacterSelection() {
         {/* Character Grid */}
         {characters.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-neutral-900/30 border border-neutral-800/50 rounded-2xl border-dashed">
-            {pendingRequest ? (
+            {creationRequest?.status === 'rejected' ? (
+              <div className="text-center max-w-lg px-4">
+                <RotateCcw className="w-16 h-16 text-amber-500/90 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-2">Ficha Devolvida pelo Mestre</h3>
+                <p className="text-neutral-400 mb-4 leading-relaxed">
+                  Sua ficha de <span className="text-amber-400 font-medium">{creationRequest.character_data?.name || 'Aventureiro'}</span> foi devolvida pelo Mestre para que você faça alterações.
+                </p>
+                {creationRequest.dm_notes && (
+                  <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl text-amber-200/90 text-sm mb-6 text-left">
+                    <span className="block text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1">Observações do Mestre</span>
+                    “{creationRequest.dm_notes}”
+                  </div>
+                )}
+                <button
+                  onClick={() => navigate(`/criacao?requestId=${creationRequest.id}`)}
+                  className="inline-flex items-center gap-3 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-900/30"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  Corrigir e Reenviar Ficha
+                </button>
+              </div>
+            ) : creationRequest?.status === 'pending' ? (
               <div className="text-center max-w-md">
                 <Clock className="w-16 h-16 text-yellow-500/80 mx-auto mb-6" />
                 <h3 className="text-2xl font-bold text-white mb-3">Solicitação em Análise</h3>
                 <p className="text-neutral-400 mb-6 leading-relaxed">
-                  Os deuses (O Mestre) estão analisando sua ficha lvl 1 de <span className="text-purple-400 font-medium">{pendingRequest.character_data.name || 'Aventureiro'}</span>.
+                  Os deuses (O Mestre) estão analisando sua ficha lvl 1 de <span className="text-purple-400 font-medium">{creationRequest.character_data?.name || 'Aventureiro'}</span>.
                   Aguarde a aprovação celestial para adentrar na guilda.
                 </p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm font-medium">
